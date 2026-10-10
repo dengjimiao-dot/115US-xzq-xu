@@ -6,8 +6,9 @@ import (
 )
 
 // Current14254C960 writes the chosen i32 at+13 and sends17B as CMD2072.
+// Slot0 cipher aligns it to32B, confirmed by official20261009 s9 (16 uses).
 func DecodeBakalCommanderBuff(p []byte) (int, error) {
-	if len(p) < 17 || len(p) > 24 {
+	if len(p) < 17 || len(p) > 32 {
 		return 0, fmt.Errorf("invalid native commander request size")
 	}
 	for _, v := range p[17:] {

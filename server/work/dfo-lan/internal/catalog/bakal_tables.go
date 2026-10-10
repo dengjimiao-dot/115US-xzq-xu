@@ -276,6 +276,9 @@ func loadBakalRaidTables(a *pvf.Archive, r *BakalRaidRules) error {
 	if err := dc.attachMapScripts(a); err != nil {
 		return err
 	}
+	if err := loadBakalEntryScenes(r); err != nil {
+		return err
+	}
 	if err := loadBakalRewards(a, r); err != nil {
 		return err
 	}

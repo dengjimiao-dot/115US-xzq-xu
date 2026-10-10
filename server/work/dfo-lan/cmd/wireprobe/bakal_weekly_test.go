@@ -45,20 +45,22 @@ func TestBakalWeeklySyncBeforeRaidAndAfterLedgerChange(t *testing.T) {
 	if err := w.syncBakalWeeklyQuota(now, send, event); err != nil {
 		t.Fatal(err)
 	}
-	if len(bodies) != 2 || binary.LittleEndian.Uint32(bodies[1][6:]) != 1 || binary.LittleEndian.Uint32(bodies[1][20:]) != 1 {
-		t.Fatal("post-clear quota retained pre-clear UI values")
+	if len(bodies) != 1 || binary.LittleEndian.Uint32(bodies[0][6:]) != 0 || binary.LittleEndian.Uint32(bodies[0][20:]) != 0 {
+		t.Fatal("owner no-consumption UI changed after historical counters")
 	}
-	if err := w.syncBakalWeeklyQuota(now.Add(7*24*time.Hour), send, event); err != nil || len(bodies) != 3 || binary.LittleEndian.Uint32(bodies[2][6:]) != 0 {
+	if err := w.syncBakalWeeklyQuota(now.Add(7*24*time.Hour), send, event); err != nil || len(bodies) != 1 || binary.LittleEndian.Uint32(bodies[0][6:]) != 0 {
 		t.Fatal("new week did not restore quota")
 	}
-	w.bakalQuotaBody = nil // same-character re-selection clears native cache
-	if err := w.syncBakalWeeklyQuota(now.Add(7*24*time.Hour), send, event); err != nil || len(bodies) != 4 {
+	// The completed-raid path also invalidates the body so a locally changed
+	// client cache is explicitly restored to zero-used under this policy.
+	w.bakalQuotaBody = nil // same-character re-selection/completion clears cache
+	if err := w.syncBakalWeeklyQuota(now.Add(7*24*time.Hour), send, event); err != nil || len(bodies) != 2 {
 		t.Fatal("re-selection did not restore identical quota")
 	}
 	w.channelType = 81
 	w.bakalQuotaBody = nil
 	w.syncBakalWeeklyQuota(now, send, event)
-	if len(bodies) != 4 {
+	if len(bodies) != 2 {
 		t.Fatal("Bakal sync replaced unrelated raid cache")
 	}
 }

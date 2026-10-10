@@ -56,10 +56,11 @@ type BakalRaidRules struct {
 	BuffDefinitions        map[string]BakalBuffDefinition `json:"buff_definitions"`
 	RaidBuffCooldownMillis int                            `json:"raid_buff_cooldown_millis"`
 	Stage                  BakalStageRule
-	Symbols                map[string]uint32  `json:"symbols"`
-	DungeonCatalog         *DungeonCatalog    `json:"-"`
-	Rewards                []BakalRewardEntry `json:"rewards"`
-	RaidID                 int                `json:"raid_id"`
+	Symbols                map[string]uint32          `json:"symbols"`
+	EntryScenes            map[uint32]BakalEntryScene `json:"entry_scenes,omitempty"`
+	DungeonCatalog         *DungeonCatalog            `json:"-"`
+	Rewards                []BakalRewardEntry         `json:"rewards"`
+	RaidID                 int                        `json:"raid_id"`
 
 	NormalPhase *BakalPhaseRules `json:"normal_phase"`
 	HardPhase   *BakalPhaseRules `json:"hard_phase"`

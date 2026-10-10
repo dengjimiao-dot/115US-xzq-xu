@@ -1,7 +1,6 @@
 package main
 
 import (
-	"dfolan/internal/game/protocol"
 	"encoding/binary"
 	"encoding/hex"
 	"testing"
@@ -19,38 +18,24 @@ func TestBakalEvidenceCommandsRetainedAfterSampleLimit(t *testing.T) {
 	}
 }
 
-// 023721 live: C2062 enters the right room; C45 enters the source arena.
-// Exercise the real portal path rather than selecting a boss grid directly.
-func TestBakalFirstPhaseLivePortalThenArena(t *testing.T) {
+// Official 20261008 s20 C2170 asks for (2,1), N5213 enters (1,1).
+// The arena comes from the current source SpecificXY, not opaque portal words.
+func TestBakalFirstPhaseOfficialPortalEntersArena(t *testing.T) {
 	c, at := bakalNativeClient(t)
 	w := c.worldState
 	p, _ := hex.DecodeString("0300000000000000ffffffffff4dedf505000000000200000001000000bb000000210100000500000005000000000000")
 	if handled, _, err := c.enterBakalPortal(2062, p, at); err != nil || !handled {
 		t.Fatalf("portal: handled=%v err=%v", handled, err)
 	}
-	if [2]byte{w.activeDungeon.Room.X, w.activeDungeon.Room.Y} != [2]byte{2, 1} {
-		t.Fatal("native entrance moved from requested grid")
+	grid := bakalNativeBossGrid(t, w, "bakal")
+	if [2]byte{w.activeDungeon.Room.X, w.activeDungeon.Room.Y} != grid {
+		t.Fatal("portal did not place player in the source Bakal arena")
 	}
-	if _, _, err := c.bakalLoadingDone(nil); err != nil {
-		t.Fatal(err)
-	}
-	if len(w.activeDungeon.LivingMonsters()) != 0 {
-		t.Fatal("boss created in entrance room")
-	}
-	p, _ = hex.DecodeString("0101150000005301000000aae3000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000cb0035a202001500000053010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005ffffffffffff000000000000004dedf5050000000000")
-	r, err := protocol.DecodeDungeonRoomTransition(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	next, _, err := w.moveDungeonRoomDecoded(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	w.activeDungeon = next
 	_, plan, err := c.bakalLoadingDone(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	next := w.activeDungeon
 	creates := 0
 	for _, packet := range plan {
 		if packet.ID == 2194 {

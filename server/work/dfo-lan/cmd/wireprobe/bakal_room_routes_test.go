@@ -43,8 +43,9 @@ func TestBakalNativeRoomRoutesAfterClear(t *testing.T) {
 					}
 					if live {
 						w.activeDungeon = base
-						if _, _, err := w.moveDungeonRoomDecoded(protocol.DungeonRoomTransition{Dungeon: source.Index, Position: [2]byte{to.X, to.Y}, RaidReturn: true}); err == nil {
-							t.Fatalf("uncleared %d/%v bypassed ACT return gate", source.Index, grid)
+						_, _, err := w.moveDungeonRoomDecoded(protocol.DungeonRoomTransition{Dungeon: source.Index, Position: [2]byte{to.X, to.Y}, RaidReturn: true})
+						if (err != nil) != !d.MoveMapEvenEnemy {
+							t.Fatalf("raid portal %d/%v ignored source live-movement permission: %v", source.Index, grid, err)
 						}
 					}
 				}

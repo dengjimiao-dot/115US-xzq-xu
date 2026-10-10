@@ -91,7 +91,7 @@ func TestBakalLiveWaitingRoomCreateAndDetails(t *testing.T) {
 	query := binary.LittleEndian.AppendUint32([]byte{1}, id)
 	query = append(query, make([]byte, 11)...)
 	_, details, err := c.handleBakalRequest(1353, query, now)
-	if err != nil || len(details) != 2 || details[0].ID != 1353 || details[0].Payload[0] != 1 || details[0].Payload[1] != 1 || details[1].ID != 1220 {
+	if err != nil || len(details) != 1 || details[0].ID != 1353 || details[0].Kind != 1 || details[0].Payload[0] != 1 || details[0].Payload[1] != 1 {
 		t.Fatalf("owned member query failed: %+v %v", details, err)
 	}
 	query[1]++
@@ -106,7 +106,7 @@ func TestBakalLiveWaitingRoomCreateAndDetails(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, packet := range started {
-		if packet.ID == 578 && binary.LittleEndian.Uint16(packet.Payload[9:]) != w.role.WireID {
+		if packet.ID == 578 && binary.LittleEndian.Uint32(packet.Payload[4:]) == 3 && binary.LittleEndian.Uint16(packet.Payload[9:]) != w.role.WireID {
 			t.Fatal("start replaced the owned actor with the fixture actor")
 		}
 	}
@@ -1297,8 +1297,8 @@ func TestBakalRuntimeCommanderEnvelopeAndMemberOwnership(t *testing.T) {
 	for _, p := range plan {
 		if p.ID == 2288 {
 			found = true
-			if binary.LittleEndian.Uint32(p.Payload[5:]) != 3 || binary.LittleEndian.Uint32(p.Payload[9:]) != 4 {
-				t.Fatal("buff targeted wrong native member")
+			if binary.LittleEndian.Uint32(p.Payload[5:]) != 3 || binary.LittleEndian.Uint32(p.Payload[9:]) != uint32(legion.BakalOwnedPartyID) {
+				t.Fatal("buff targeted a member slot instead of the owned native party")
 			}
 		}
 	}

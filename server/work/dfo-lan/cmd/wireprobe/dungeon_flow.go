@@ -175,6 +175,15 @@ func (w *worldSession) selectDungeon(p []byte) (*dungeon.Session, []outboundPack
 	if e != nil {
 		return nil, nil, e
 	}
+	// Bakal source rooms are owned raid instances entered through C2062.
+	// Generic C16 must not bypass the raid's preparing/recovery/phase gates.
+	if w.channelType == legion.BakalChannelType && w.bakalRules != nil {
+		for _, sourceDungeon := range w.bakalRules.Dungeons {
+			if sourceDungeon.Index == r.ID {
+				return nil, nil, fmt.Errorf("Bakal room requires the owned native raid portal")
+			}
+		}
+	}
 	if w.channelType == 73 || r.ID == blackPurgatorySquadDungeon {
 		if !w.selectingDungeon || w.approvedDungeonGate != r.ID || r.Difficulty != 2 {
 			return nil, nil, fmt.Errorf("黑鸦小队缺少本次选图许可或源难度不匹配")

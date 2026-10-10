@@ -160,16 +160,29 @@ func (client *gameConnection) handleBakalRequest(id uint16, p []byte, now time.T
 		if err != nil {
 			return true, nil, err
 		}
+		presentation, err := protocol.BakalCommanderPresentation(byte(slot), legion.BakalOwnedPartyID)
+		if err != nil {
+			return true, nil, err
+		}
 		frames, err := w.bakal.UseRaidBuffAt(slot, now)
 		if err != nil {
 			return true, nil, err
 		}
-		packets := bakalOutgoing(frames)
-		for i := range packets {
-			if packets[i].ID == 2288 {
-				binary.LittleEndian.PutUint32(packets[i].Payload[9:], uint32(w.bakalRecruitment.MemberPosition-1))
+		// Native success: inventory activation -> NPC presentation -> party
+		// effect snapshot -> ACK. Routine inventory snapshots do not play it.
+		var packets, effects []outboundPacket
+		for _, packet := range bakalOutgoing(frames) {
+			if packet.ID == legion.NotiBakalBuffInventory {
+				binary.LittleEndian.PutUint32(packet.Payload[9:], uint32(legion.BakalOwnedPartyID))
+				packets = append(packets, packet)
+				packets = append(packets, outboundPacket{"bakal_commander_presentation", 0, 2289, presentation})
+			} else {
+				effects = append(effects, packet)
 			}
 		}
+		packets = append(packets, effects...)
+		// Official s9 activation publishes inventory/effect before ACK2072.
+		packets = append(packets, outboundPacket{"bakal_commander_ack", 1, 2072, legion.BakalAck()})
 		client.event(map[string]any{"kind": "bakal_commander_used", "slot": slot, "member_position": w.bakalRecruitment.MemberPosition, "raid": w.bakalRun})
 		return true, packets, nil
 	case 72:
@@ -296,7 +309,7 @@ func (client *gameConnection) bakalOwnedInfo(p []byte) (bool, []outboundPacket, 
 	if err != nil {
 		return true, nil, err
 	}
-	return true, []outboundPacket{{"raid_owned_details_sent", 1, 1353, body}, {"raid_member_info_ready", 1, 1220, []byte{1}}}, nil
+	return true, []outboundPacket{{"raid_owned_details_sent", 1, 1353, body}}, nil
 }
 
 // Town movement changes the area used by the native pre-start predicate.
@@ -369,11 +382,21 @@ func (client *gameConnection) bakalStartRaid(p []byte, now time.Time) (bool, []o
 	if err != nil {
 		return true, nil, err
 	}
-	packets = append(packets, lifecycle...)
 	w.bakalFailureNotified = false
 	for i := range packets {
-		if packets[i].ID == legion.NotiBakalMemberAssigned {
+		if packets[i].Name == "bakal_real_member_assigned" {
 			packets[i].Payload = member
+		}
+	}
+	// N581 reads the owned raid descriptor to choose its countdown resource
+	// and source duration. Official N578 mode2 precedes N581. N578 mode3
+	// shares the opcode, so replace only the member-assignment frame above.
+	for i, packet := range packets {
+		if packet.ID == legion.NotiBakalCountdown {
+			prefix := append([]outboundPacket(nil), packets[:i]...)
+			prefix = append(prefix, lifecycle...)
+			packets = append(prefix, packets[i:]...)
+			break
 		}
 	}
 	packets = append(packets, outboundPacket{"巴卡尔开战确认", 1, legion.CmdBakalStartRaid, legion.BakalAck()})
@@ -453,7 +476,7 @@ func (client *gameConnection) bakalBattleReport(p []byte, now time.Time) (bool, 
 	if w.activeDungeon == nil || !w.activeDungeon.Loaded || report.Dungeon != w.activeDungeon.Definition.ID {
 		return true, nil, legion.ErrBakalWarpOutsideCombat
 	}
-	if report.Map != w.activeDungeon.Room.Map {
+	if report.Map != w.activeDungeon.Room.Map && (w.activeDungeon.EntrySceneMap == 0 || report.Map != w.activeDungeon.EntrySceneMap) {
 		return true, nil, fmt.Errorf("Bakal battle report outside owned map")
 	}
 	// Damage reports do not establish a death. CMD39 confirms native entities.
@@ -603,6 +626,10 @@ func (client *gameConnection) bakalFinishLoading(p []byte, native bool) (bool, [
 	// N27/N28 start a new client scene. Restore the current source-owned
 	// inventory after the first load handshake, never on the duplicate37/2073.
 	packets = append(packets, bakalOutgoing([]legion.BakalFrame{w.bakal.BuffInventorySnapshot()})...)
+	// Scene initialization may recreate the client's player/buff projection.
+	// Restore the owned raid effects with their original absolute deadlines;
+	// this snapshot never grants a charge, consumes a buff or extends its life.
+	packets = append(packets, outboundPacket{"bakal_party_effects_restored", 0, legion.NotiBakalPartyLocation, w.bakal.PartyFrame(w.bakalLocation, time.Now())})
 	if w.bakalCurrent == uint32(w.bakalRules.NormalPhase.FinalClearDungeon) {
 		client.event(map[string]any{"kind": "bakal_final_scene_started", "raid": w.bakalRun,
 			"dungeon": w.bakalCurrent, "map": w.activeDungeon.Room.Map,
@@ -731,7 +758,11 @@ func (client *gameConnection) enterBakalPortal(id uint16, p []byte, now time.Tim
 			grid = [2]byte{byte(loc.X), byte(loc.Y)}
 			continue
 		}
-		if loc.Dungeon != r.Dungeon || loc.SpecificX == nil || loc.SpecificY == nil || requested != [2]byte{byte(loc.X), byte(loc.Y)} || w.bakal.IsLocationDefeated(uint32(loc.Index)) {
+		// The official first Bakal entrance asks for the side room (2,1),
+		// but the server places the actor at the source arena (1,1).
+		// Preserve normal portal matching for the other raid dungeons.
+		bakalArena := loc.Dungeon == uint32(w.bakalRules.NormalPhase.EnterBakalDungeon)
+		if loc.Dungeon != r.Dungeon || loc.SpecificX == nil || loc.SpecificY == nil || (!bakalArena && requested != [2]byte{byte(loc.X), byte(loc.Y)}) || w.bakal.IsLocationDefeated(uint32(loc.Index)) {
 			continue
 		}
 		for _, placement := range w.bakal.MonsterPlacements() {
@@ -754,7 +785,7 @@ func (client *gameConnection) enterBakalPortal(id uint16, p []byte, now time.Tim
 		return true, nil, err
 	}
 	client.event(map[string]any{"kind": "bakal_portal_selection", "raid": w.bakalRun,
-		"request_id": id, "dungeon": w.bakalCurrent, "location": w.bakalLocation, "requested_grid": requested, "resolved_grid": grid, "occupied_arena": resolved})
+		"request_id": id, "dungeon": w.bakalCurrent, "location": w.bakalLocation, "requested_grid": requested, "resolved_grid": grid, "occupied_arena": resolved, "battle_map": w.activeDungeon.Room.Map, "entry_scene_map": w.activeDungeon.EntrySceneMap})
 	return true, packets, nil
 }
 
@@ -861,6 +892,11 @@ func (client *gameConnection) tickBakalOpening(now time.Time) error {
 		w.deathSent = nil
 		w.drops = nil
 		w.resetCards()
+		// A completed raid can change the client's local quota cache even
+		// though this policy leaves the saved counters unchanged.
+		if workflow.BakalUnlimitedWeeklyRuns && w.bakal.Stage() == legion.BakalOpeningEnded {
+			w.bakalQuotaBody = nil
+		}
 		if err := w.syncBakalWeeklyQuota(now, client.output.send, client.event); err != nil {
 			return err
 		}
@@ -905,6 +941,7 @@ func (w *worldSession) bakalSettleSplice(now time.Time) error {
 		return err
 	}
 	w.bakal.SetRewardInventory(body)
+	w.bakal.SetRewardPublished(plan.Eligible)
 	return nil
 }
 

@@ -57,8 +57,8 @@ func (s *Session) RaidStageWarp(c catalog.DungeonCatalog, target [2]byte) (*Sess
 // Handover raid_stage.go:10..19 selects the owned maze target and its latest
 // visited layer after a cleared room, instead of applying adjacent-door Move.
 func (s *Session) MoveRaidReturn(c catalog.DungeonCatalog, target [2]byte) (*Session, error) {
-	if s == nil || !s.RaidManaged || !s.Loaded || !s.RoomCleared() {
-		return nil, fmt.Errorf("raid return requires cleared owned loaded room")
+	if s == nil || !s.RaidManaged || !s.Loaded || (!s.RoomCleared() && !s.Definition.MoveMapEvenEnemy) {
+		return nil, fmt.Errorf("raid return requires owned loaded room and source movement permission")
 	}
 	for _, room := range s.Maze.Rooms {
 		if [2]byte{room.X, room.Y} == target {

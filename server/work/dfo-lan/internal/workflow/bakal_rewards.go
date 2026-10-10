@@ -35,6 +35,9 @@
 // Normal rewards select one source-weighted row per party_card/squad_item
 // category from raidsystem/raidreward.etc. Preview items and monster-piece
 // rank references are not award pools. Bidding remains a separate pathway.
+// Owner policy2026-10-10 disables weekly consumption through
+// BakalUnlimitedWeeklyRuns. The reconstruction above documents historical
+// native behavior; current admission/UI and Freeze honor the owner policy.
 package workflow
 
 import (
@@ -163,7 +166,8 @@ func BakalRaidAdmission(rules *catalog.BakalRaidRules, role database.Character, 
 type BakalWeeklyCounters struct{ Clears, Rewards uint32 }
 
 // BakalWeeklyUsage projects the existing ledger for both admission and UI.
-// These are used counters, not remaining amounts. A new week is projected
+// The owner's no-consumption policy projects zero used counts for admission/UI,
+// while validating and preserving old ledgers. A new week is projected
 // without rewriting the character or its pending reward plans.
 func BakalWeeklyUsage(role database.Character, now time.Time) (BakalWeeklyCounters, error) {
 	var usage BakalWeeklyCounters
@@ -171,7 +175,7 @@ func BakalWeeklyUsage(role database.Character, now time.Time) (BakalWeeklyCounte
 	if err != nil {
 		return usage, err
 	}
-	if p.Week == bakalWeekOf(now) {
+	if !BakalUnlimitedWeeklyRuns && p.Week == bakalWeekOf(now) {
 		usage.Clears, usage.Rewards = p.Clears, p.Rewards
 	}
 	return usage, nil
@@ -234,14 +238,18 @@ func (s *BakalRewardService) freeze(current database.Character, run string, clea
 	}
 	rules := s.Rules
 	plan.Eligible = rules.MinimalDungeonClearCount <= cleared &&
-		(rules.WeeklyRewardLimit <= 0 || p.Rewards < uint32(rules.WeeklyRewardLimit))
+		(BakalUnlimitedWeeklyRuns || rules.WeeklyRewardLimit <= 0 || p.Rewards < uint32(rules.WeeklyRewardLimit))
 	if !plan.Eligible {
-		// The clear still counts toward the weekly clear limit.
-		p.Clears++
+		// Native consumption counts this clear; the owner policy leaves it untouched.
+		if !BakalUnlimitedWeeklyRuns {
+			p.Clears++
+		}
 		blob, err := saveBakalProgress(top, p)
 		return blob, plan, err
 	}
-	p.Rewards++ // reserve this week's reward slot (A-layer INCL at :156)
+	if !BakalUnlimitedWeeklyRuns {
+		p.Rewards++ // reserve the native weekly slot only under consumption policy
+	}
 	plan.Items, err = s.freezeItems()
 	if err != nil {
 		return nil, BakalRewardPlan{}, err

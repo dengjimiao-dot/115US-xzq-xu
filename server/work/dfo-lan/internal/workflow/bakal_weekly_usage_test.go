@@ -3,7 +3,6 @@ package workflow
 import (
 	"dfolan/internal/database"
 	"encoding/json"
-	"errors"
 	"testing"
 	"time"
 )
@@ -14,11 +13,11 @@ func TestBakalWeeklyProjectionMatchesAdmissionAndPreservesLegacyState(t *testing
 	role := database.Character{ID: 7, State: state}
 	before := string(role.State)
 	usage, err := BakalWeeklyUsage(role, now)
-	if err != nil || usage.Clears != 1 || usage.Rewards != 1 {
+	if err != nil || usage.Clears != 0 || usage.Rewards != 0 {
 		t.Fatalf("legacy projection=%+v err=%v", usage, err)
 	}
-	if !errors.Is(BakalRaidAdmission(bakalTestRules(), role, now), ErrBakalWeeklyClearLimit) {
-		t.Fatal("UI exhausted but admission allowed")
+	if BakalRaidAdmission(bakalTestRules(), role, now) != nil {
+		t.Fatal("historical consumed ledger blocked unlimited admission")
 	}
 	nextWeek := now.Add(7 * 24 * time.Hour)
 	usage, err = BakalWeeklyUsage(role, nextWeek)

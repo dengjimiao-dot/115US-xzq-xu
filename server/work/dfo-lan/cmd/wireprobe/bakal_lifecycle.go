@@ -20,6 +20,9 @@ func (w *worldSession) bakalLifecyclePlan() ([]outboundPacket, error) {
 	case legion.BakalOpeningActive, legion.BakalOpeningFinal:
 		next.State = 2
 		next.ActiveStartedAt = uint32(w.bakal.ActiveSince().Unix())
+	case legion.BakalOpeningEnded:
+		next.State = 3
+		next.ActiveStartedAt = uint32(w.bakal.ActiveSince().Unix())
 	}
 	if next.State == w.bakalRecruitment.State && next.ActiveStartedAt == w.bakalRecruitment.ActiveStartedAt {
 		return nil, nil
