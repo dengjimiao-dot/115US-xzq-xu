@@ -27,4 +27,16 @@ if not "%ERRORLEVEL%"=="0" exit /b %ERRORLEVEL%
 cl /nologo /std:c++17 /O2 /MT /EHsc /utf-8 ..\src\test_symbol_page.cpp /Fe:test_symbol_page.exe /link user32.lib
 if not "%ERRORLEVEL%"=="0" exit /b %ERRORLEVEL%
 test_symbol_page.exe
+if not "%ERRORLEVEL%"=="0" exit /b %ERRORLEVEL%
+cl /nologo /std:c++17 /O2 /MT /EHsc /utf-8 ..\src\test_symbol_window_repair.cpp /Fe:test_symbol_window_repair.exe /link user32.lib
+if not "%ERRORLEVEL%"=="0" exit /b 1
+test_symbol_window_repair.exe
+if not "%ERRORLEVEL%"=="0" exit /b 1
+cl /nologo /std:c++17 /O2 /MT /EHsc /utf-8 ..\src\test_symbol_item_use.cpp /Fe:test_symbol_item_use.exe /link user32.lib
+if not "%ERRORLEVEL%"=="0" exit /b 1
+test_symbol_item_use.exe
+if not "%ERRORLEVEL%"=="0" exit /b 1
+cl /nologo /std:c++17 /O2 /MT /EHsc /utf-8 ..\src\test_symbol_growth_presentation.cpp /Fe:test_symbol_growth_presentation.exe /link user32.lib bcrypt.lib
+if not "%ERRORLEVEL%"=="0" exit /b 1
+test_symbol_growth_presentation.exe
 exit /b %ERRORLEVEL%

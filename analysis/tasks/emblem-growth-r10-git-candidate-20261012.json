@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "status": "candidate_pending_manual_ui_acceptance",
+  "inherited_r7_commit": "18df3ce99d0552a5fa71961aa59746db0117d173",
+  "upstream_base": "e487a5fde67525ce410cd0b890c531fbca9b9f40",
+  "scope": "nonraid emblem and symbol growth; upstream raid paths preserved including deletions",
+  "go": {
+    "build": 0,
+    "vet": 0,
+    "tests": {
+      "pass": 5228,
+      "skip": 354
+    },
+    "old_passed_tests_retained": 5184,
+    "old_passes_missing": []
+  },
+  "sqlite": {
+    "prior_migration_sections_identical": 40,
+    "old_save_upgrade_and_old_writer_test": "TestAccountCommonMaterialsUpgradePreservesOldLedgerAndWriter",
+    "new_migration": "0039_account_common_materials.sql",
+    "real_player_database_accessed": false
+  },
+  "native": {
+    "local_features_test_groups": 5,
+    "inherited_rebuilds": [
+      {
+        "name": "avatar-equipped-marker",
+        "exit_code": 0
+      },
+      {
+        "name": "head-text-upscale-r3",
+        "exit_code": 0
+      },
+      {
+        "name": "local-dungeon-exit-r13",
+        "exit_code": 0
+      },
+      {
+        "name": "robot-native-ai-r34-render2",
+        "exit_code": 0
+      }
+    ],
+    "proxy_regression_passed": true,
+    "source_fingerprints_verified": 153,
+    "fingerprint_normalization": "Text source CRLF-to-LF; binary payloads exact bytes"
+  },
+  "resources": {
+    "files": {
+      "Script.pvf": "4d2d3bffe4dff84567e0595e695e1b8f351b7f2f8d613ad600911b9aed2f5224",
+      "sk.dat": "406de0c9f0b243d19273d58206f0431ed83f2d61319ec95fe07031a4d7fa7618",
+      "ImagePacks2/NpkIndex.etc": "987a4f73090793cfc2acf885ca91c3ef21a24fc32ba807afa1302ef347c7f580",
+      "Script.inner.pvf": "d175ea7def414ec665f5052e90b82208786b7caae0d8d916470e1301bca50aca"
+    },
+    "image_packs": [
+      {
+        "target": "ImagePacks2/sprite_local_20261011_emblem_growth_r1.NPK",
+        "sha256": "452e038d5cfa95482e9046afef329f22e88e5669b2b26de92fc5595f5f3ea10f"
+      },
+      {
+        "target": "ImagePacks2/sprite_local_20261011_emblem_growth_r4.NPK",
+        "sha256": "f9b79f36977448605ee32104aea2355a6e9d3c5d72e2ee23150f18128a6e93b7"
+      },
+      {
+        "target": "ImagePacks2/sprite_interface2_popup_menu.NPK",
+        "sha256": "cfd790c155568d21d1b583897cd534df2c5460359d513809244e9f3d86d62b7c"
+      }
+    ],
+    "input_client_unchanged": true,
+    "stages": [
+      {
+        "success": true,
+        "old_record_count": 5746741,
+        "new_record_count": 5747276,
+        "unchanged_records": 5746020,
+        "original_pool_prefixes_identical": true,
+        "original_compressed_body_identical": true,
+        "original_group_metadata_identical": true,
+        "expected_files_checked": 1254,
+        "semantic_tokens_checked": 151560,
+        "semantic_strings_checked": 36134,
+        "localization_tables_checked": 2
+      },
+      {
+        "success": true,
+        "old_record_count": 5747276,
+        "new_record_count": 5747331,
+        "unchanged_records": 5747273,
+        "original_pool_prefixes_identical": true,
+        "original_compressed_body_identical": true,
+        "original_group_metadata_identical": true,
+        "expected_files_checked": 57,
+        "semantic_tokens_checked": 7253,
+        "semantic_strings_checked": 3698,
+        "localization_tables_checked": 1
+      },
+      {
+        "success": true,
+        "old_record_count": 5747331,
+        "new_record_count": 5747331,
+        "unchanged_records": 5747327,
+        "original_pool_prefixes_identical": true,
+        "original_compressed_body_identical": true,
+        "original_group_metadata_identical": true,
+        "expected_files_checked": 3,
+        "semantic_tokens_checked": 3087,
+        "semantic_strings_checked": 1516,
+        "localization_tables_checked": 1
+      },
+      {
+        "success": true,
+        "old_record_count": 5747331,
+        "new_record_count": 5747355,
+        "unchanged_records": 5747328,
+        "original_pool_prefixes_identical": true,
+        "original_compressed_body_identical": true,
+        "original_group_metadata_identical": true,
+        "expected_files_checked": 27,
+        "semantic_tokens_checked": 3080,
+        "semantic_strings_checked": 1545,
+        "localization_tables_checked": 0
+      }
+    ],
+    "original_native_index_pairs_preserved": 200379,
+    "appended_native_index_pairs": 544,
+    "unrelated_image_index_records_preserved": 14492,
+    "largest_source_resource_bytes": 2242788
+  },
+  "paired_delivery": {
+    "steps": [
+      {
+        "mode": "clean",
+        "step": "verify",
+        "exit_code": 0
+      },
+      {
+        "mode": "clean",
+        "step": "plan",
+        "exit_code": 0
+      },
+      {
+        "mode": "clean",
+        "step": "install",
+        "exit_code": 0
+      },
+      {
+        "mode": "clean",
+        "step": "uninstall",
+        "exit_code": 0
+      },
+      {
+        "mode": "replace",
+        "step": "verify",
+        "exit_code": 0
+      },
+      {
+        "mode": "replace",
+        "step": "plan",
+        "exit_code": 0
+      },
+      {
+        "mode": "replace",
+        "step": "install",
+        "exit_code": 0
+      },
+      {
+        "mode": "replace",
+        "step": "uninstall",
+        "exit_code": 0
+      }
+    ],
+    "targets": 16,
+    "real_game_files_touched": false,
+    "manual_ui_accepted": false
+  },
+  "protected_raid_paths_verified_including_deletions": 307,
+  "manual_ui_accepted": false,
+  "instructions": "client-patchs/emblem-growth-r10/README.md",
+  "paired_manifest": "client-patchs/r7-nonraid-update/paired-manifest.json"
+}

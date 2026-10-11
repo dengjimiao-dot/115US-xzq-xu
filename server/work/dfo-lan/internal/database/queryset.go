@@ -26,6 +26,7 @@ import (
 // docs/sqlite-dual-engine-design.md.
 
 type querySet interface {
+	accountCommonMaterialQueries
 	characterCapacityQueries
 	AttendanceEvidence(context.Context, int64, string) (json.RawMessage, error)
 	AdventureDataByName(context.Context, string) (json.RawMessage, error)

@@ -129,6 +129,29 @@ func (w *worldSession) symbolView(now time.Time) (featurebridge.SymbolView, erro
 		v.Bag = append(v.Bag, featurebridge.SymbolBagItem{Slot: i.Slot, Mask: mask, Template: i.Template, Amount: i.Amount, ExpireTime: i.ExpireTime})
 	}
 	sort.Slice(v.Bag, func(i, j int) bool { return v.Bag[i].Slot < v.Bag[j].Slot })
+	if layout.Growth != nil {
+		counts, e := w.store.AccountMaterials(context.Background(), w.role.AccountID)
+		if e != nil {
+			return v, e
+		}
+		growth, e := w.items.SymbolGrowthDisplay(w.role.State, counts, now.Unix())
+		if e != nil {
+			return v, e
+		}
+		g := &featurebridge.SymbolGrowthView{Materials: growth.Materials, Result: growth.Result, Progress: growth.Progress, Lights: growth.Lights}
+		if a := growth.Visual; a != nil {
+			g.Visual = &featurebridge.SymbolGrowthVisual{Operation: a.Operation, Outcome: a.Outcome, Item: a.Item, Amount: a.Amount}
+		}
+		if u := growth.UI; u != nil {
+			g.UI = &featurebridge.SymbolGrowthUI{MaterialTemplate: u.MaterialTemplate, FailRewardTemplate: u.FailRewardTemplate, MaterialBalance: u.MaterialBalance, FailRewardBalance: u.FailRewardBalance, Lights: append([]uint32(nil), u.Lights...)}
+		}
+		for _, o := range growth.Options {
+			r := o.Request
+			q := o.UI
+			g.Options = append(g.Options, featurebridge.SymbolGrowthOption{Operation: r.Operation, Slot: r.Slot, Template: r.Template, Argument: r.Argument, Amount: r.Amount, Label: o.Label, UI: featurebridge.SymbolGrowthUIQuote{MaterialTemplate: q.MaterialTemplate, MaterialAmount: q.MaterialAmount, Points: q.Points, SuccessRate: q.SuccessRate, RateUnit: q.RateUnit, Results: append([][2]uint32(nil), q.Results...)}})
+		}
+		v.Growth = g
+	}
 	return v, nil
 }
 
@@ -178,7 +201,36 @@ func (client *gameConnection) symbolFeature(ctx context.Context, request feature
 			reply.Status = featurebridge.StatusInternal
 			return
 		}
-	} else {
+	} else if request.Kind == featurebridge.SymbolGrowth {
+		r, e := featurebridge.DecodeSymbolGrowthRequest(request.Body)
+		if e != nil || r.Role != uint64(w.role.ID) || w.activeDungeon != nil || w.state.Position.Town == 0 {
+			reply.Status = featurebridge.StatusRefused
+			return
+		}
+		saved, _, _, e := (&workflow.ItemService{Store: w.store, Items: w.items}).ApplySymbolGrowth(ctx, w.role, inventory.SymbolGrowthRequest{Source: r.Source, Sequence: r.Sequence, Operation: r.Operation, Slot: r.Slot, Template: r.Template, Argument: r.Argument, Amount: r.Amount}, now)
+		if e != nil {
+			reply.Status = featurebridge.StatusRefused
+			reply.Body = []byte(e.Error())
+			return
+		}
+		w.role = saved
+		bag, e := inventory.ReadBag(saved.State)
+		if e != nil {
+			reply.Status = featurebridge.StatusInternal
+			return
+		}
+		body, e := protocol.InventoryRestore(bag.Rows(), bag.Expansion)
+		if e != nil {
+			reply.Status = featurebridge.StatusInternal
+			return
+		}
+		if client.output != nil {
+			if e = client.output.send(0, 13, body); e != nil {
+				reply.Status = featurebridge.StatusInternal
+				return
+			}
+		}
+	} else if request.Kind == featurebridge.SymbolExchange {
 		r, e := featurebridge.DecodeSymbolRequest(request.Body)
 		if e != nil || r.Role != uint64(w.role.ID) || w.activeDungeon != nil || w.state.Position.Town == 0 {
 			reply.Status = featurebridge.StatusRefused
@@ -210,6 +262,9 @@ func (client *gameConnection) symbolFeature(ctx context.Context, request feature
 				return
 			}
 		}
+	} else {
+		reply.Status = featurebridge.StatusUnsupported
+		return
 	}
 	if request.Kind != featurebridge.SymbolSnapshot && client.output != nil {
 		for _, p := range w.appendFameUpdate(nil, nil) {

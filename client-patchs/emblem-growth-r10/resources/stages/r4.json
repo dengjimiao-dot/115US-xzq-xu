@@ -1,0 +1,699 @@
+{
+  "client_script_sha256": "288acb138d6c0f2dd56101c9f173ad458afe7f6b309cdf7bc73adf677870ff23",
+  "client_sk_sha256": "4b52608f23b721cf121a5488ea494dcb71fa6aaa7dd2369bb0de617ea31501a4",
+  "localized": [
+    {
+      "table": 20,
+      "key": "em4_0e0a83571f009027bccc2744",
+      "value": "变换"
+    },
+    {
+      "table": 20,
+      "key": "em4_07c93bb43be9d4a8c606d47a",
+      "value": "确认"
+    },
+    {
+      "table": 20,
+      "key": "em4_5fe468aa435448e1aad980b9",
+      "value": "概率信息"
+    },
+    {
+      "table": 20,
+      "key": "em4_f59f36796096822b032b97bb",
+      "value": "请确认！"
+    },
+    {
+      "table": 20,
+      "key": "em4_06148bbb191a9797350e37e4",
+      "value": "将减少每周可兑换次数。"
+    },
+    {
+      "table": 20,
+      "key": "em4_622581400f4347f019cbb59e",
+      "value": "地下城图鉴"
+    },
+    {
+      "table": 20,
+      "key": "em4_d5bbf266e51b6e06b580286b",
+      "value": "一键出售(A)"
+    },
+    {
+      "table": 20,
+      "key": "em4_640f1e41b52233c2459f74d5",
+      "value": "购买时取用金库材料"
+    },
+    {
+      "table": 20,
+      "key": "em4_32dc1ba37ac7547a4850187d",
+      "value": "列表"
+    },
+    {
+      "table": 20,
+      "key": "em4_227b0f2ff9939eba7f890984",
+      "value": "升级"
+    },
+    {
+      "table": 20,
+      "key": "em4_f4a16e8c84265c805863477f",
+      "value": "星徽综合属性"
+    },
+    {
+      "table": 20,
+      "key": "em4_f20c4e19b7a31facd23a3a0e",
+      "value": "星徽"
+    },
+    {
+      "table": 20,
+      "key": "em4_1afaf27232df8d6a18667ee2",
+      "value": "等级/阶段"
+    },
+    {
+      "table": 20,
+      "key": "em4_14b58003a78d1332d1a9d9f7",
+      "value": "冒险家名望"
+    },
+    {
+      "table": 20,
+      "key": "em4_c8855ccb09c9e6a40fb4ff8d",
+      "value": "固有效果"
+    },
+    {
+      "table": 20,
+      "key": "em4_ef51e2cdca4ced180d83f90b",
+      "value": "共鸣现状"
+    },
+    {
+      "table": 20,
+      "key": "em4_43161f4cd175126fff749a8c",
+      "value": "共鸣效果"
+    },
+    {
+      "table": 20,
+      "key": "em4_740f19a5c6578f97e7f33689",
+      "value": "<tst::event_365_date>04/30<tst::default>"
+    },
+    {
+      "table": 20,
+      "key": "em4_6d1e01594289da060c0a87a1",
+      "value": "分解徽章"
+    },
+    {
+      "table": 20,
+      "key": "em4_bac118ba3b8bab809e537ba3",
+      "value": "自动选择 (A)"
+    },
+    {
+      "table": 20,
+      "key": "em4_016fd481418c81ce1af2789e",
+      "value": "进行分解"
+    },
+    {
+      "table": 20,
+      "key": "em4_3b7dd7c730f8883a8a0f401d",
+      "value": "初始化"
+    },
+    {
+      "table": 20,
+      "key": "em4_ada371e7e137b3ed413634a6",
+      "value": "徽章分解"
+    },
+    {
+      "table": 20,
+      "key": "em4_aedf805e5433fdc2cc4b31e3",
+      "value": "可放入徽章后进行分解。"
+    },
+    {
+      "table": 20,
+      "key": "em4_af92e14301ed2b6740837f02",
+      "value": "全选"
+    },
+    {
+      "table": 20,
+      "key": "em4_f1e10d08f0b98f28ff9da879",
+      "value": "可按分类选择要分解的徽章。"
+    },
+    {
+      "table": 20,
+      "key": "em4_8bd06eb17c066bae1d467eb2",
+      "value": "每个分类需至少设定1个条件， 条件不足时无法使用。"
+    },
+    {
+      "table": 20,
+      "key": "em4_ee749ebd9a27e14c9c65d5b9",
+      "value": "设定条件将在关闭游戏时初始化。"
+    },
+    {
+      "table": 20,
+      "key": "em4_10960fbf01f1d669f4953738",
+      "value": "初始化"
+    },
+    {
+      "table": 20,
+      "key": "em4_2dea8203485f147b4e73fadf",
+      "value": "取回所有已放入的徽章。"
+    },
+    {
+      "table": 20,
+      "key": "em4_d4ae4edb5405ec482c2d88a6",
+      "value": "全部"
+    },
+    {
+      "table": 20,
+      "key": "em4_b6a3ed067a81899c7c106b3f",
+      "value": "稀有"
+    },
+    {
+      "table": 20,
+      "key": "em4_52a9fd509e453192e64a4823",
+      "value": "红色"
+    },
+    {
+      "table": 20,
+      "key": "em4_b0b033fc40159c16cb0d6c36",
+      "value": "黄色"
+    },
+    {
+      "table": 20,
+      "key": "em4_4a38ba22e5a73d0ddc810fdd",
+      "value": "绿色"
+    },
+    {
+      "table": 20,
+      "key": "em4_9cacb57767cac880e17b3486",
+      "value": "蓝色"
+    },
+    {
+      "table": 20,
+      "key": "em4_3883ac2b9abaae6ebc36be36",
+      "value": "多重"
+    },
+    {
+      "table": 20,
+      "key": "em4_e0250ac3f65168cf5133e011",
+      "value": "白金"
+    },
+    {
+      "table": 20,
+      "key": "em4_b8e78d2d178c08b459f76676",
+      "value": "级别"
+    },
+    {
+      "table": 20,
+      "key": "em4_243fc2847e514a2f08a0d46d",
+      "value": "颜色"
+    },
+    {
+      "table": 20,
+      "key": "em4_623eae5ce669c8d2640c1295",
+      "value": "徽章突破"
+    },
+    {
+      "table": 20,
+      "key": "em4_d2511c79111fe831f8a7c582",
+      "value": "进行突破(空格键)"
+    },
+    {
+      "table": 20,
+      "key": "em4_d1fe430222f1b25c124941e0",
+      "value": "普通突破"
+    },
+    {
+      "table": 20,
+      "key": "em4_7d6c1606024163aa643ba572",
+      "value": "特殊突破"
+    },
+    {
+      "table": 20,
+      "key": "em4_2fe5b0cbe5e2fe00ab75311a",
+      "value": "华丽徽章"
+    },
+    {
+      "table": 20,
+      "key": "em4_c1c203c3ca3adbe40b1a2ed3",
+      "value": "灿烂徽章"
+    },
+    {
+      "table": 20,
+      "key": "em4_7d52974b8c1ad3000774afd6",
+      "value": "玲珑徽章"
+    },
+    {
+      "table": 20,
+      "key": "em4_1aeae6a2d36f9a81d7d8baca",
+      "value": "神圣徽章"
+    },
+    {
+      "table": 20,
+      "key": "em4_0a66519403e52ac4c2499a82",
+      "value": "突破材料"
+    },
+    {
+      "table": 20,
+      "key": "em4_649d042d0ba705a53fb663ed",
+      "value": "徽章突破"
+    },
+    {
+      "table": 20,
+      "key": "em4_8f326087d14e5c4e12a8fc29",
+      "value": "可锁定放入徽章的属性， 并提升至更高级别。"
+    },
+    {
+      "table": 20,
+      "key": "em4_31f61e2a10ece0ba9c2ce8e7",
+      "value": "普通突破"
+    },
+    {
+      "table": 20,
+      "key": "em4_996d1a60a9667f168b8a06b3",
+      "value": "根据一定概率， 将放入的徽章提升至更高级别。"
+    },
+    {
+      "table": 20,
+      "key": "em4_06a29f12a2a0ea486a406359",
+      "value": "特殊突破"
+    },
+    {
+      "table": 20,
+      "key": "em4_c8ca7819eb62cc51d7e6663c",
+      "value": "额外添加与已放入徽章相同的徽章， 必定成功提升级别。"
+    },
+    {
+      "table": 20,
+      "key": "em4_987c992b77ff626c6b1df654",
+      "value": "突破成功！"
+    },
+    {
+      "table": 20,
+      "key": "em4_b5a6008e3831c84a0bf3ef51",
+      "value": "突破失败。"
+    },
+    {
+      "table": 20,
+      "key": "em4_054bf657a567e6b3d1c999d4",
+      "value": "请放入要进行\\n突破的徽章。"
+    },
+    {
+      "table": 20,
+      "key": "em4_8cb62cf725895189ef3e4b05",
+      "value": "请放入相同的徽章。"
+    },
+    {
+      "table": 20,
+      "key": "em4_64331d285572766fdc282c12",
+      "value": "星徽共鸣"
+    },
+    {
+      "table": 20,
+      "key": "em4_19f05fa4207c5b8368bdcd70",
+      "value": "进行共鸣(空格键)"
+    },
+    {
+      "table": 20,
+      "key": "em4_685a76da0db42a6d9b13cdd7",
+      "value": "需要五曜星光 : "
+    },
+    {
+      "table": 20,
+      "key": "em4_21dd4a067ee143323387f32a",
+      "value": "成功几率 : "
+    },
+    {
+      "table": 20,
+      "key": "em4_5fc76c72fb50ed63bbee48ff",
+      "value": "所有星徽共鸣完成。"
+    },
+    {
+      "table": 20,
+      "key": "em4_445453edecba868ce7290b3a",
+      "value": "星徽共鸣"
+    },
+    {
+      "table": 20,
+      "key": "em4_4cc40f3af7c41356b5094d12",
+      "value": "可提升星徽的级别和阶段。"
+    },
+    {
+      "table": 20,
+      "key": "em4_e6f2c9fd04294e9bfcb84cfe",
+      "value": "星徽共鸣失败时， 可获得1个[散落的五曜星痕]。"
+    },
+    {
+      "table": 20,
+      "key": "em4_3ba8e9a05cbf659987d71e1d",
+      "value": "进行共鸣"
+    },
+    {
+      "table": 20,
+      "key": "em4_5d946b3ffece5c736dfbea0a",
+      "value": "生成可提升星徽级别和阶段的共鸣之光。"
+    },
+    {
+      "table": 20,
+      "key": "em4_6b5ea51204d0586ff0ea55b5",
+      "value": "共鸣之光 (红/黄/绿/蓝)"
+    },
+    {
+      "table": 20,
+      "key": "em4_b6d1cb427398cb8523a9338a",
+      "value": "可提升处于共鸣状态的星徽的阶段和级别。"
+    },
+    {
+      "table": 20,
+      "key": "em4_0c0947106d13e6af5544181b",
+      "value": "根据生成的同属性共鸣之光的数量，\\n可获得更强的提升效果。"
+    },
+    {
+      "table": 20,
+      "key": "em4_5bbe2a9b4e64de11c7e45f6e",
+      "value": "共鸣之光 (彩色)"
+    },
+    {
+      "table": 20,
+      "key": "em4_e4729323d14daf18cced38c3",
+      "value": "可提升所有星徽的级别和阶段。"
+    },
+    {
+      "table": 20,
+      "key": "em4_736ff2ee662e0c5ee3593d53",
+      "value": "适用级别和阶段最高的共鸣之光的成功率。"
+    },
+    {
+      "table": 20,
+      "key": "em4_entry_0",
+      "value": "星徽共鸣"
+    },
+    {
+      "table": 20,
+      "key": "em4_entry_1",
+      "value": "徽章突破"
+    },
+    {
+      "table": 20,
+      "key": "em4_entry_2",
+      "value": "徽章分解"
+    },
+    {
+      "table": 20,
+      "key": "em4_entry_3",
+      "value": "材料兑换"
+    },
+    {
+      "table": 20,
+      "key": "em4_entry_4",
+      "value": "星徽提升券"
+    },
+    {
+      "table": 20,
+      "key": "em4_entry_5",
+      "value": "徽章变更"
+    }
+  ],
+  "record_files": [
+    {
+      "file": "records/bcbf340c2ac0652708305126237692e0b58953786e1a010bd00de408f8183032.json",
+      "sha256": "bcbf340c2ac0652708305126237692e0b58953786e1a010bd00de408f8183032",
+      "path": "local/20261011/emblem-growth-r4/4b30927ba98e5e057c86.xui"
+    },
+    {
+      "file": "records/1b64747c52e94268c77fc316d7e375f15aa9d0812d0940a3b24f758a263897ec.json",
+      "sha256": "1b64747c52e94268c77fc316d7e375f15aa9d0812d0940a3b24f758a263897ec",
+      "path": "local/20261011/emblem-growth-r4/7a2243028ca1ff1858c2.xui"
+    },
+    {
+      "file": "records/8d7cd0a5d172c5a2079412aef67b14674db17e2d216233bee5fc584ba3b3b449.json",
+      "sha256": "8d7cd0a5d172c5a2079412aef67b14674db17e2d216233bee5fc584ba3b3b449",
+      "path": "local/20261011/emblem-growth-r4/ab5347b62ddf401549e9.xui"
+    },
+    {
+      "file": "records/9060c44f7bf2d0ee86b302b8637a1f4c9d4e496ca63cf4d162f0fe8e744f4b4a.json",
+      "sha256": "9060c44f7bf2d0ee86b302b8637a1f4c9d4e496ca63cf4d162f0fe8e744f4b4a",
+      "path": "local/20261011/emblem-growth-r4/ui/symbolemblemdetailinfowindow.xui"
+    },
+    {
+      "file": "records/0075a7c2be82bd3926da61fb6c7fd6eb3dd3d7a114ed447bdba8a9904f8a79ae.json",
+      "sha256": "0075a7c2be82bd3926da61fb6c7fd6eb3dd3d7a114ed447bdba8a9904f8a79ae",
+      "path": "local/20261011/emblem-growth-r4/ui/multisymbolemblemdetailinfolist.xui"
+    },
+    {
+      "file": "records/d5e972c495349a890d89716528ec3a4ac46d2c2df6098d90268cdbf2fc0c1431.json",
+      "sha256": "d5e972c495349a890d89716528ec3a4ac46d2c2df6098d90268cdbf2fc0c1431",
+      "path": "local/20261011/emblem-growth-r4/ui/symbolemblemdetailinfolist.xui"
+    },
+    {
+      "file": "records/c9bf20bd3d330a4737686e88c1f4916e69ac1b3bcfebb40848fb7192145b610d.json",
+      "sha256": "c9bf20bd3d330a4737686e88c1f4916e69ac1b3bcfebb40848fb7192145b610d",
+      "path": "local/20261011/emblem-growth-r4/ui/disjointemblem.xui"
+    },
+    {
+      "file": "records/a66589400a55dabcd4b544c38e389cd0c39645b4448e273c789dc02fd14041b5.json",
+      "sha256": "a66589400a55dabcd4b544c38e389cd0c39645b4448e273c789dc02fd14041b5",
+      "path": "local/20261011/emblem-growth-r4/ui/help_disjointemblem.xui"
+    },
+    {
+      "file": "records/ff1c6a04bea7f31eb9da7b16a6406dc07a6722d61cabfbfef21302ef35474cc7.json",
+      "sha256": "ff1c6a04bea7f31eb9da7b16a6406dc07a6722d61cabfbfef21302ef35474cc7",
+      "path": "local/20261011/emblem-growth-r4/ui/disjointfilteroption.xui"
+    },
+    {
+      "file": "records/d3bbbe9bdd0629f92bddd14dfec5d1d34c4fc154b80d8aa9582ab96e1349ae1e.json",
+      "sha256": "d3bbbe9bdd0629f92bddd14dfec5d1d34c4fc154b80d8aa9582ab96e1349ae1e",
+      "path": "local/20261011/emblem-growth-r4/ui/upgradeemblem.xui"
+    },
+    {
+      "file": "records/cf646a6e25723716c1b6ec37006d80e78ce835111e4cbae8dc0c202619853cbc.json",
+      "sha256": "cf646a6e25723716c1b6ec37006d80e78ce835111e4cbae8dc0c202619853cbc",
+      "path": "local/20261011/emblem-growth-r4/ui/help_upgradeemblem.xui"
+    },
+    {
+      "file": "records/9fe04a16310f656bdb8ecdbca05b0c09465cf2853650c8d0cf828945a1179b16.json",
+      "sha256": "9fe04a16310f656bdb8ecdbca05b0c09465cf2853650c8d0cf828945a1179b16",
+      "path": "local/20261011/emblem-growth-r4/ui/upgrade_result.xui"
+    },
+    {
+      "file": "records/9e69c7265a1cd58b74b3228e837bb3c6e70f8a046c8abf5775d6dc84b5687655.json",
+      "sha256": "9e69c7265a1cd58b74b3228e837bb3c6e70f8a046c8abf5775d6dc84b5687655",
+      "path": "local/20261011/emblem-growth-r4/ui/upgrade_special.xui"
+    },
+    {
+      "file": "records/bd9b686d3b2a76bb8dee0f9ce8d94c380e33b38be79bf2d49ac79d0a92ac9895.json",
+      "sha256": "bd9b686d3b2a76bb8dee0f9ce8d94c380e33b38be79bf2d49ac79d0a92ac9895",
+      "path": "local/20261011/emblem-growth-r4/ui/upgrade_normal.xui"
+    },
+    {
+      "file": "records/cae5c96b006d9c50588c93a2918dcfe97551326c0970f8d84b25819d04bdf94c.json",
+      "sha256": "cae5c96b006d9c50588c93a2918dcfe97551326c0970f8d84b25819d04bdf94c",
+      "path": "local/20261011/emblem-growth-r4/ui/symbolresonance.xui"
+    },
+    {
+      "file": "records/a6c1a0116d94560c621f1b84fac6cdb2ea5fe360e327afa80327defc8f7e46e4.json",
+      "sha256": "a6c1a0116d94560c621f1b84fac6cdb2ea5fe360e327afa80327defc8f7e46e4",
+      "path": "local/20261011/emblem-growth-r4/ui/help_symbolresonance.xui"
+    },
+    {
+      "file": "records/e807ed636f692708e7bcafb787f65ed2232a863a7d84c01456e3b83f643ef1df.json",
+      "sha256": "e807ed636f692708e7bcafb787f65ed2232a863a7d84c01456e3b83f643ef1df",
+      "path": "local/20261011/emblem-growth-r4/ui/symbolresonancenode.xui"
+    },
+    {
+      "file": "records/6d9b012318b2e0ee4fe49c0ed17ac400c5438064038f7bd4bd513f573d3d1a1c.json",
+      "sha256": "6d9b012318b2e0ee4fe49c0ed17ac400c5438064038f7bd4bd513f573d3d1a1c",
+      "path": "local/20261011/emblem-growth-r4/ui/symbolresonancesymbolnode.xui"
+    },
+    {
+      "file": "records/a44b65960b69d9f0944f571f55cfe9e74642e3cff4ae2b8e74f0732470739029.json",
+      "sha256": "a44b65960b69d9f0944f571f55cfe9e74642e3cff4ae2b8e74f0732470739029",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodfail_m_01.ani"
+    },
+    {
+      "file": "records/d411fb69ba3410f252cde6dfc81a3cedc906c6ed3e39a3a0194032ff1fa53fe5.json",
+      "sha256": "d411fb69ba3410f252cde6dfc81a3cedc906c6ed3e39a3a0194032ff1fa53fe5",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodbefore_m_00.ani"
+    },
+    {
+      "file": "records/493903e2cc222068a26cb8704eb32d28e753189d603026e2080e0224f9abbf70.json",
+      "sha256": "493903e2cc222068a26cb8704eb32d28e753189d603026e2080e0224f9abbf70",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/symbolupeffect_b_00.ani"
+    },
+    {
+      "file": "records/90ca4d6b0d78cbc9cae1a576a7c57b65e3bf84888977b7bb8bdf748770a5813c.json",
+      "sha256": "90ca4d6b0d78cbc9cae1a576a7c57b65e3bf84888977b7bb8bdf748770a5813c",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodfail_b_01.ani"
+    },
+    {
+      "file": "records/5c01e1bc75d652c411bd607d8591ebb738aa9580e713e2808db2c85b48aefcc3.json",
+      "sha256": "5c01e1bc75d652c411bd607d8591ebb738aa9580e713e2808db2c85b48aefcc3",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodbefore_b_00.ani"
+    },
+    {
+      "file": "records/9ffd6ddb771b355aa64453c4bb857aa15e79750a3cda3a19bc30712958f1985e.json",
+      "sha256": "9ffd6ddb771b355aa64453c4bb857aa15e79750a3cda3a19bc30712958f1985e",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/symbolupeffect_g_00.ani"
+    },
+    {
+      "file": "records/bc3096aac734d68d6b1a52a45d429f2ab71cce72f510507bc6b6f5c087d2e979.json",
+      "sha256": "bc3096aac734d68d6b1a52a45d429f2ab71cce72f510507bc6b6f5c087d2e979",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodfail_g_01.ani"
+    },
+    {
+      "file": "records/6ea07126ba6bdfad1007598d026ada5398bf884ca040fd459758ea50cc1dce06.json",
+      "sha256": "6ea07126ba6bdfad1007598d026ada5398bf884ca040fd459758ea50cc1dce06",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodbefore_g_00.ani"
+    },
+    {
+      "file": "records/06f3a078c9de15aa9b2b11a3a73b0b8c58791bd07600016484b6f4d97f31f4d1.json",
+      "sha256": "06f3a078c9de15aa9b2b11a3a73b0b8c58791bd07600016484b6f4d97f31f4d1",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/symbolupeffect_y_00.ani"
+    },
+    {
+      "file": "records/4ef538c3402c9b4b45a37c33b62fe96fda0b57b7b961db6a0a0532ffd40f4795.json",
+      "sha256": "4ef538c3402c9b4b45a37c33b62fe96fda0b57b7b961db6a0a0532ffd40f4795",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodfail_y_01.ani"
+    },
+    {
+      "file": "records/5216b8f17c20c286355e7d148ba73d91e8eb970bcbc71618e4f9bb7bcd9f82a6.json",
+      "sha256": "5216b8f17c20c286355e7d148ba73d91e8eb970bcbc71618e4f9bb7bcd9f82a6",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodbefore_y_00.ani"
+    },
+    {
+      "file": "records/39133ff49add41b4412029fbb5988b587f7a2d118e68e374de9ddca1d7e1c2d3.json",
+      "sha256": "39133ff49add41b4412029fbb5988b587f7a2d118e68e374de9ddca1d7e1c2d3",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/symbolupeffect_r_00.ani"
+    },
+    {
+      "file": "records/9eb09842392b5852b7196e6b3852f035c694f68633cf628d25491e931005fb41.json",
+      "sha256": "9eb09842392b5852b7196e6b3852f035c694f68633cf628d25491e931005fb41",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodfail_r_01.ani"
+    },
+    {
+      "file": "records/df056908052cebd808936e6682d44e26677bcde1b5a0639843e0ca4e56c57026.json",
+      "sha256": "df056908052cebd808936e6682d44e26677bcde1b5a0639843e0ca4e56c57026",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodbefore_r_00.ani"
+    },
+    {
+      "file": "records/af0aacd7f3a38b25992630c6f3b785b988c64bf811baca5a87bc5ddda4d45943.json",
+      "sha256": "af0aacd7f3a38b25992630c6f3b785b988c64bf811baca5a87bc5ddda4d45943",
+      "path": "local/20261011/emblem-growth-r4/669c69b1d7908aab87c9.ani"
+    },
+    {
+      "file": "records/658c130e13592d8888bff7e3ea49ab2cf4060e9f3880ba3f0035ec435e87d490.json",
+      "sha256": "658c130e13592d8888bff7e3ea49ab2cf4060e9f3880ba3f0035ec435e87d490",
+      "path": "local/20261011/emblem-growth-r4/9ad37cc673d70661efcb.ani"
+    },
+    {
+      "file": "records/43b9ff201f35a59a2ccf7db53bcb630281f56dc20cb716958fe2d91202b4e0b4.json",
+      "sha256": "43b9ff201f35a59a2ccf7db53bcb630281f56dc20cb716958fe2d91202b4e0b4",
+      "path": "local/20261011/emblem-growth-r4/2205711d7ccc1d01e0f0.ani"
+    },
+    {
+      "file": "records/9baab02a0c9b1a0e8714e171cf38412d800bf015e251baa303f50a5ab19082a0.json",
+      "sha256": "9baab02a0c9b1a0e8714e171cf38412d800bf015e251baa303f50a5ab19082a0",
+      "path": "local/20261011/emblem-growth-r4/a9fdd20006ca4690eaae.ani"
+    },
+    {
+      "file": "records/3e74e1d1ca50cd0dbd1cbd2133a3ec15f88c10328ae7f4d6d3cc4a411e3246ae.json",
+      "sha256": "3e74e1d1ca50cd0dbd1cbd2133a3ec15f88c10328ae7f4d6d3cc4a411e3246ae",
+      "path": "local/20261011/emblem-growth-r4/1657dbbbe5b1696925cb.ani"
+    },
+    {
+      "file": "records/c6680233e84afd4084e3731c24c28f9d573be709305fa9608fa1918bdb5ede4a.json",
+      "sha256": "c6680233e84afd4084e3731c24c28f9d573be709305fa9608fa1918bdb5ede4a",
+      "path": "local/20261011/emblem-growth-r4/25ae7f92c47fd78f98ea.ani"
+    },
+    {
+      "file": "records/5169bac957ddacfdf16baf69b698c0f89e900fceae0c1a97b5d665f6947466ac.json",
+      "sha256": "5169bac957ddacfdf16baf69b698c0f89e900fceae0c1a97b5d665f6947466ac",
+      "path": "local/20261011/emblem-growth-r4/emblemdisjoint/animation_03.ani"
+    },
+    {
+      "file": "records/7b4341cc3bcbf8a32c02e30215ee2461230c086dd77325e1f87a9dd0ba7b8a03.json",
+      "sha256": "7b4341cc3bcbf8a32c02e30215ee2461230c086dd77325e1f87a9dd0ba7b8a03",
+      "path": "local/20261011/emblem-growth-r4/emblemdisjoint/animation_02.ani"
+    },
+    {
+      "file": "records/1423b2b97e0765493830fcb5539c18d1282b01e1602c066d6d82618efa0de8ac.json",
+      "sha256": "1423b2b97e0765493830fcb5539c18d1282b01e1602c066d6d82618efa0de8ac",
+      "path": "local/20261011/emblem-growth-r4/emblemdisjoint/animation_01.ani"
+    },
+    {
+      "file": "records/00fe1306fd5c1efb18394dff395bc841c07744a115a473391364f799fbc2cea1.json",
+      "sha256": "00fe1306fd5c1efb18394dff395bc841c07744a115a473391364f799fbc2cea1",
+      "path": "local/20261011/emblem-growth-r4/emblemupgrade/emblemidle.ani"
+    },
+    {
+      "file": "records/d7096161241d20d14eee77b5ea0e9906d230b72755db040d507cc82b628a4d78.json",
+      "sha256": "d7096161241d20d14eee77b5ea0e9906d230b72755db040d507cc82b628a4d78",
+      "path": "local/20261011/emblem-growth-r4/emblemupgrade/emblemfail.ani"
+    },
+    {
+      "file": "records/f736ee44a11f857897a4b3919d444a6dfde2600c193f85d627b726aa009baad0.json",
+      "sha256": "f736ee44a11f857897a4b3919d444a6dfde2600c193f85d627b726aa009baad0",
+      "path": "local/20261011/emblem-growth-r4/emblemupgrade/emblemsuccess.ani"
+    },
+    {
+      "file": "records/6c5e30cb950eefdf8f58fe376dfadb97abbc50e508d23f6ff9c14c49b4731bd4.json",
+      "sha256": "6c5e30cb950eefdf8f58fe376dfadb97abbc50e508d23f6ff9c14c49b4731bd4",
+      "path": "local/20261011/emblem-growth-r4/emblemupgrade/emblembefore01.ani"
+    },
+    {
+      "file": "records/60d2bc60973caf219d9ee2585b8cd5309eb35323a37340f01f75fcea6d178509.json",
+      "sha256": "60d2bc60973caf219d9ee2585b8cd5309eb35323a37340f01f75fcea6d178509",
+      "path": "local/20261011/emblem-growth-r4/emblemupgrade/gaugereset_00.ani"
+    },
+    {
+      "file": "records/34e20254ab326d73995e939f7903e404a512cb5ae48ea444fe23dda159a93345.json",
+      "sha256": "34e20254ab326d73995e939f7903e404a512cb5ae48ea444fe23dda159a93345",
+      "path": "local/20261011/emblem-growth-r4/emblemupgrade/emblembefore00.ani"
+    },
+    {
+      "file": "records/40fa40499e9cd4cb6641687e96555fb9c99f6e4ac9e6a700f516c644cf52774a.json",
+      "sha256": "40fa40499e9cd4cb6641687e96555fb9c99f6e4ac9e6a700f516c644cf52774a",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/resultsuccess_m_01.ani"
+    },
+    {
+      "file": "records/948aef227aaa5eae8ba8d2fd79cc318aa08c7e7d6e1c121750bdac2ee8519c7a.json",
+      "sha256": "948aef227aaa5eae8ba8d2fd79cc318aa08c7e7d6e1c121750bdac2ee8519c7a",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/resultfail_01.ani"
+    },
+    {
+      "file": "records/1937674460edfdd3b94f43c065b9cbbf4ea03fbeac6412498d26459b9a200b5a.json",
+      "sha256": "1937674460edfdd3b94f43c065b9cbbf4ea03fbeac6412498d26459b9a200b5a",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/resultsuccess_01.ani"
+    },
+    {
+      "file": "records/ab72474ec919734e264c6c24aae4d7d50afb0710a003c0a6848e102e35bcac1a.json",
+      "sha256": "ab72474ec919734e264c6c24aae4d7d50afb0710a003c0a6848e102e35bcac1a",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodfail_b_00.ani"
+    },
+    {
+      "file": "records/cff6890312b51afb1249820d6b2e5d5e8d08dd3364eb4e461bb3512275e743bc.json",
+      "sha256": "cff6890312b51afb1249820d6b2e5d5e8d08dd3364eb4e461bb3512275e743bc",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodsuccess_01.ani"
+    },
+    {
+      "file": "records/6c620089298ac51212acc76ea1d5efa3c0463cd60de716fc9ecdd008f54c5ed7.json",
+      "sha256": "6c620089298ac51212acc76ea1d5efa3c0463cd60de716fc9ecdd008f54c5ed7",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodoff.ani"
+    },
+    {
+      "file": "records/183baa02e2731413cd0f43d402247c05e58d884a1ae2f8aa719f36e293d33559.json",
+      "sha256": "183baa02e2731413cd0f43d402247c05e58d884a1ae2f8aa719f36e293d33559",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/nodon.ani"
+    },
+    {
+      "file": "records/1059765ee262f686b0253b1179e3a2ec26d1bd16c6942111daee4dc827a687e6.json",
+      "sha256": "1059765ee262f686b0253b1179e3a2ec26d1bd16c6942111daee4dc827a687e6",
+      "path": "local/20261011/emblem-growth-r4/symbolresonance/symbolidle.ani"
+    },
+    {
+      "file": "records/6fa12b42bc570e5e1670f269dd9a612f4327f7417cac2e3d3f4d2efa29186c67.json",
+      "sha256": "6fa12b42bc570e5e1670f269dd9a612f4327f7417cac2e3d3f4d2efa29186c67",
+      "path": "local/20261008/emblem/iteminventorywindow.xui"
+    },
+    {
+      "file": "records/708cfa9d551f6ae51f374f2fb9fc6a3827a2bf625109c66ad0ba531887e096dd.json",
+      "sha256": "708cfa9d551f6ae51f374f2fb9fc6a3827a2bf625109c66ad0ba531887e096dd",
+      "path": "local/20261008/symbol_r30/ui/symbolemblemdetailinfowindow.xui"
+    }
+  ],
+  "client_exe_sha256": "515fefa1c71577a15f90513f860270320f3502bc492ad596f10cf176b91c21eb"
+}

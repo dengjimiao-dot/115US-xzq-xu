@@ -34,6 +34,9 @@ struct Callbacks {
     bool (*incompatible)(uint16_t)=nullptr;
     int (*draggedSlot)()=nullptr;
     void* (*popupRoot)()=nullptr;
+    void (*inventoryUpdated)(void*)=nullptr;
+    void (*inventoryDestroyed)(void*)=nullptr;
+    void (*overlay)()=nullptr;
 };
 static Callbacks callbacks;
 static InlineHook bagHook;
@@ -44,6 +47,9 @@ using DrawFn=void(__fastcall*)(void*,int,SharedControl*);
 static uintptr_t rendererTable[4]{}; // RTTI followed by its three methods
 static uintptr_t* savedRendererTable=nullptr;
 static bool bagPressPending=false;
+static bool emblemPageRequested=false;
+static unsigned emblemRequestAttempts=0;
+static int hoveredRow=-1;
 static int hoveredSlot=-1;
 static ULONGLONG hoveredAt=0;
 static POINT hoveredPoint{};
@@ -65,7 +71,13 @@ template<class T> T read(void* object, size_t offset) {
                       &result, sizeof(result), &got);
     return got==sizeof(result)?result:T{};
 }
-static uintptr_t address(uintptr_t va) { return base + va - 0x140000000; }
+static uintptr_t address(uintptr_t va) {
+#ifdef NATIVE_INVENTORY_TEST_ADDRESS
+    return NATIVE_INVENTORY_TEST_ADDRESS(va);
+#else
+    return base + va - 0x140000000;
+#endif
+}
 static void __fastcall drawCell(void* renderer,int row,SharedControl* cell){
     reinterpret_cast<DrawFn>(savedRendererTable[1])(renderer,row,cell);
     if(!borrowedAvatar||renderer!=static_cast<char*>(borrowedAvatar)+0x80||!cell||!cell->value)return;
@@ -76,14 +88,14 @@ static void __fastcall drawCell(void* renderer,int row,SharedControl* cell){
     if(slot<0||slot>UINT16_MAX)return;
     if(callbacks.draggedSlot&&callbacks.draggedSlot()==slot){draggedRow=row;draggedRowAt=GetTickCount64();}
     if(reinterpret_cast<InputFn>(address(0x146ed0030))(cell->value)){
-        hoveredSlot=slot;hoveredAt=GetTickCount64();
+        hoveredSlot=slot;hoveredRow=row;hoveredAt=GetTickCount64();
         GetCursorPos(&hoveredPoint);
         // Capture while the native cell is known, including the first frame
         // of a drag. Update alone can run before the grid changes selection.
         DWORD pid=0;GetWindowThreadProcessId(GetForegroundWindow(),&pid);
         const bool atOrigin=abs(hoveredPoint.x-pressPoint.x)<GetSystemMetrics(SM_CXDRAG)&&abs(hoveredPoint.y-pressPoint.y)<GetSystemMetrics(SM_CYDRAG);
         if(bagPressPending&&atOrigin&&pid==GetCurrentProcessId()&&(GetAsyncKeyState(VK_LBUTTON)&0x8000)&&callbacks.bagItem){
-            bagPressPending=false;callbacks.bagItem(uint16_t(slot));
+            draggedRow=row;draggedRowAt=GetTickCount64();bagPressPending=false;callbacks.bagItem(uint16_t(slot));
         }
     }
     if(!callbacks.incompatible||!callbacks.incompatible(uint16_t(slot)))return;
@@ -103,7 +115,7 @@ static void bagPress(void* avatar){
     // Use the last rendered cell only while the pointer is still there.
     POINT at{};GetCursorPos(&at);
     const int slot=GetTickCount64()-hoveredAt<150&&abs(at.x-hoveredPoint.x)<GetSystemMetrics(SM_CXDRAG)&&abs(at.y-hoveredPoint.y)<GetSystemMetrics(SM_CYDRAG)?hoveredSlot:-1;
-    if(slot>=0&&slot<=UINT16_MAX){bagPressPending=false;callbacks.bagItem(uint16_t(slot));}
+    if(slot>=0&&slot<=UINT16_MAX){draggedRow=hoveredRow;draggedRowAt=GetTickCount64();bagPressPending=false;callbacks.bagItem(uint16_t(slot));}
 }
 static bool resourcesMatch() {
     wchar_t path[32768]{};
@@ -182,7 +194,7 @@ static void title(void* window) {
 static void unbindGrid() {
     if(!borrowedAvatar)return;
     if(savedRendererTable){*reinterpret_cast<uintptr_t**>(static_cast<char*>(borrowedAvatar)+0x80)=savedRendererTable;savedRendererTable=nullptr;}
-    hoveredSlot=-1;hoveredAt=0;leftWasDown=false;
+    hoveredSlot=-1;hoveredRow=-1;draggedRow=-1;hoveredAt=0;leftWasDown=false;
     // Transfer the original strong reference back before its controller dies.
     auto slot=reinterpret_cast<SharedControl*>(static_cast<unsigned char*>(borrowedAvatar)+0x40);
     auto current=*slot;
@@ -224,6 +236,7 @@ static bool bindGrid(void* window,int previousTab) {
 }
 static void* __fastcall destroy(void* window,unsigned int flags) {
     if(active==window){if(callbacks.left)callbacks.left();unbindGrid();active=nullptr;}
+    if(callbacks.inventoryDestroyed)callbacks.inventoryDestroyed(window);
     return originalDestroy(window,flags);
 }
 static int selected(void* window) {
@@ -244,7 +257,7 @@ static bool emblem(void* window) {
 static void drawDraggedItem(){
     if(!active||!borrowedAvatar||!emblem(active)||!callbacks.draggedSlot)return;
     const int slot=callbacks.draggedSlot();
-    if(slot<0||draggedRow<0||GetTickCount64()-draggedRowAt>100)return;
+    if(slot<0||draggedRow<0)return;
     auto renderer=static_cast<char*>(borrowedAvatar)+0x80;
     if(reinterpret_cast<int(__fastcall*)(void*,int)>(address(0x1458bf660))(renderer,draggedRow)!=slot)return;
     // Resolve afresh on the UI thread; never retain an inventory item across
@@ -275,9 +288,11 @@ static void drawDraggedItem(){
 // +20 on a window is instead the input dispatcher and must stay native.
 static uint64_t __fastcall renderControl(void* control){
     const auto result=reinterpret_cast<uint64_t(__fastcall*)(void*)>(renderHook.original())(control);
-    if(active&&(control==read<void*>(active,0xd0)||(callbacks.popupRoot&&control==callbacks.popupRoot()))&&
-       reinterpret_cast<InputFn>(address(0x141fb6530))(control))
-        drawDraggedItem();
+    const bool growthRoot=callbacks.popupRoot&&control==callbacks.popupRoot();
+    const bool inventoryRoot=active&&control==read<void*>(active,0xd0);
+    if((growthRoot||inventoryRoot)&&reinterpret_cast<InputFn>(address(0x141fb6530))(control)){
+        drawDraggedItem();if(growthRoot&&callbacks.overlay)callbacks.overlay();
+    }
     return result;
 }
 // Stackable tooltips take 1468963c0, not the equipment formatter chain
@@ -411,6 +426,9 @@ static void __fastcall select(void* window,int page,int subpage) {
         return;
     }
     if(!emblem(window)) {
+        // A native open can reset the selector while our grid is still borrowed.
+        // Restore it before entering the original transition and binding again.
+        if(borrowedAvatar){unbindGrid();active=nullptr;}
         // Run the native transition's cleanup with a valid legacy page.
         auto avatar=read<void*>(window,0x5f8);
         const int previousTab=0; // the remaining visible avatar subpage
@@ -433,7 +451,18 @@ static void __fastcall select(void* window,int page,int subpage) {
         if(log){fputs("native emblem page selected; legacy page index remains bounded\n",log);fflush(log);}
     }
 }
+static void requestEmblemPage(){
+    if(!selectHook.installed)return;
+    emblemPageRequested=true;emblemRequestAttempts=0;
+    auto context=read<void*>(reinterpret_cast<void*>(address(0x14e683c78)),0);
+    if(!context){emblemPageRequested=false;return;}
+    // Current native inventory factory enum, confirmed in the live cache.
+    reinterpret_cast<void*(__fastcall*)(void*,int,uintptr_t,uintptr_t)>(address(0x14668c520))(context,537,0,0);
+}
 static void __fastcall update(void* window) {
+    if(emblemPageRequested&&ownsPage(window)){
+        select(window,4,-1);emblemPageRequested=!emblem(window)&&++emblemRequestAttempts<8;
+    }
     // A legacy subpage callback can bypass the main selector. Redirect it
     // while the owned five-page resource is active, before updating that bag.
     if(selected(window)==2 && active!=window && ownsPage(window)) {
@@ -476,6 +505,7 @@ static void __fastcall update(void* window) {
     }
     originalUpdate(window);
     hideLegacyEmblemButton(window);
+    if(callbacks.inventoryUpdated)callbacks.inventoryUpdated(window);
 }
 static bool rootInput(void* window,uintptr_t target) {
     // These native inventory input methods combine a root-widget query with

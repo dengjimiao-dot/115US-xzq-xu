@@ -13,6 +13,7 @@ const (
 	SymbolSnapshot uint16 = 3
 	SymbolExchange uint16 = 4
 	SymbolRefresh  uint16 = 5
+	SymbolGrowth   uint16 = 6
 )
 
 // Flags bit 0 is authoritative usability; bits 8..15 carry source item rarity.
@@ -52,7 +53,52 @@ type SymbolView struct {
 	Bag                        []SymbolBagItem
 	Attributes, BuffAttributes string
 	Powers                     [][2]uint32
+	Growth                     *SymbolGrowthView
 }
+type SymbolGrowthOption struct {
+	Operation, Slot            uint16
+	Template, Argument, Amount uint32
+	Label                      string
+	UI                         SymbolGrowthUIQuote
+}
+type SymbolGrowthUIQuote struct {
+	MaterialTemplate, MaterialAmount, Points, SuccessRate, RateUnit uint32
+	Results                                                         [][2]uint32
+}
+type SymbolGrowthUI struct {
+	MaterialTemplate, FailRewardTemplate uint32
+	MaterialBalance, FailRewardBalance   uint64
+	Lights                               []uint32
+}
+type SymbolGrowthVisual struct {
+	Operation, Outcome uint16
+	Item, Amount       uint32
+}
+type SymbolGrowthView struct {
+	Visual                              *SymbolGrowthVisual
+	Materials, Result, Progress, Lights string
+	Options                             []SymbolGrowthOption
+	UI                                  *SymbolGrowthUI
+}
+type SymbolGrowthRequest struct {
+	Role, Sequence             uint64
+	Source                     string
+	Operation, Slot            uint16
+	Template, Argument, Amount uint32
+}
+
+func DecodeSymbolGrowthRequest(p []byte) (SymbolGrowthRequest, error) {
+	var r SymbolGrowthRequest
+	if len(p) != 96 {
+		return r, fmt.Errorf("growth request width")
+	}
+	r = SymbolGrowthRequest{binary.LittleEndian.Uint64(p), binary.LittleEndian.Uint64(p[8:]), string(p[16:80]), binary.LittleEndian.Uint16(p[80:]), binary.LittleEndian.Uint16(p[82:]), binary.LittleEndian.Uint32(p[84:]), binary.LittleEndian.Uint32(p[88:]), binary.LittleEndian.Uint32(p[92:])}
+	if r.Role == 0 || !hexString(r.Source, 64) || r.Operation < 1 || r.Operation > 8 {
+		return SymbolGrowthRequest{}, fmt.Errorf("growth request identity")
+	}
+	return r, nil
+}
+
 type SymbolRequest struct {
 	Role, Sequence   uint64
 	Source, Group    string
@@ -138,7 +184,7 @@ func (v SymbolView) Bytes() ([]byte, error) {
 		put(i.Amount)
 		put(i.ExpireTime)
 	}
-	if v.Attributes != "" || v.BuffAttributes != "" || len(v.Powers) > 0 {
+	if v.Attributes != "" || v.BuffAttributes != "" || len(v.Powers) > 0 || v.Growth != nil {
 		put(uint32(0x31544153)) // SAT1: optional, bounded UTF-8 display trailer.
 		texts := []string{v.Attributes, v.BuffAttributes}
 		for _, g := range v.Groups {
@@ -152,7 +198,7 @@ func (v SymbolView) Bytes() ([]byte, error) {
 			b.WriteString(s)
 		}
 	}
-	if len(v.Powers) > 0 {
+	if len(v.Powers) > 0 || v.Growth != nil {
 		if len(v.Powers) > 64 {
 			return nil, fmt.Errorf("too many symbol powers")
 		}
@@ -189,6 +235,84 @@ func (v SymbolView) Bytes() ([]byte, error) {
 				put(uint16(len(s)))
 				b.WriteString(s)
 			}
+		}
+	}
+	if v.Growth != nil {
+		put(uint32(0x31524753)) // SGR1: paired local growth extension.
+		g := v.Growth
+		str := func(s string) error {
+			if len(s) > 4096 || !utf8.ValidString(s) || bytes.IndexByte([]byte(s), 0) >= 0 {
+				return fmt.Errorf("growth text invalid")
+			}
+			put(uint16(len(s)))
+			b.WriteString(s)
+			return nil
+		}
+		for _, s := range []string{g.Materials, g.Result, g.Progress, g.Lights} {
+			if e := str(s); e != nil {
+				return nil, e
+			}
+		}
+		if len(g.Options) > 1024 {
+			return nil, fmt.Errorf("growth option count")
+		}
+		put(uint16(len(g.Options)))
+		for _, o := range g.Options {
+			if o.Operation < 1 || o.Operation > 8 {
+				return nil, fmt.Errorf("growth option kind")
+			}
+			put(o.Operation)
+			put(o.Slot)
+			put(o.Template)
+			put(o.Argument)
+			put(o.Amount)
+			if e := str(o.Label); e != nil {
+				return nil, e
+			}
+		}
+		if u := g.UI; u != nil {
+			if u.MaterialTemplate < 2 || u.FailRewardTemplate < 2 || (len(u.Lights) != 0 && len(u.Lights) != 10) {
+				return nil, fmt.Errorf("growth UI identity or lights")
+			}
+			put(uint32(0x31554753)) // SGU1: paired presentation fields, no request changes.
+			put(u.MaterialTemplate)
+			put(u.FailRewardTemplate)
+			put(u.MaterialBalance)
+			put(u.FailRewardBalance)
+			put(uint16(len(u.Lights)))
+			for _, color := range u.Lights {
+				if color > 4 {
+					return nil, fmt.Errorf("growth UI light color")
+				}
+				put(uint8(color))
+			}
+			put(uint16(len(g.Options)))
+			for _, o := range g.Options {
+				q := o.UI
+				if len(q.Results) > 8 || q.Points > 100 || (q.SuccessRate > 0 && (q.RateUnit == 0 || q.SuccessRate > q.RateUnit)) {
+					return nil, fmt.Errorf("growth UI quote bounds")
+				}
+				put(q.MaterialTemplate)
+				put(q.MaterialAmount)
+				put(q.Points)
+				put(q.SuccessRate)
+				put(q.RateUnit)
+				put(uint16(len(q.Results)))
+				for _, result := range q.Results {
+					put(result[0])
+					put(result[1])
+				}
+			}
+		}
+		if a := g.Visual; a != nil {
+			if a.Operation < 1 || a.Operation > 8 || a.Outcome < 1 || a.Outcome > 4 || a.Item == 1 {
+				return nil, fmt.Errorf("growth visual bounds")
+			}
+			put(uint32(0x31564753))
+			put(a.Operation)
+			put(a.Outcome)
+			put(a.Item)
+			put(a.Amount)
 		}
 	}
 	if b.Len() > MaxBody {

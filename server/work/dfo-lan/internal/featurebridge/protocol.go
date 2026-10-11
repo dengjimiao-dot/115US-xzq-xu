@@ -49,7 +49,7 @@ type Frame struct {
 
 func (f Frame) Bytes() ([]byte, error) {
 	kind := f.Kind &^ Response
-	if f.ID == 0 || len(f.Body) > MaxBody || kind < Snapshot || kind > SymbolRefresh || f.Status > StatusInternal || (f.Kind&Response == 0 && f.Status != 0) {
+	if f.ID == 0 || len(f.Body) > MaxBody || kind < Snapshot || kind > SymbolGrowth || f.Status > StatusInternal || (f.Kind&Response == 0 && f.Status != 0) {
 		return nil, fmt.Errorf("invalid extension frame")
 	}
 	p := make([]byte, HeaderSize+len(f.Body))

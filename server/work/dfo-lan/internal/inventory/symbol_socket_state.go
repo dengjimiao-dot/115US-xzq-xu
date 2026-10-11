@@ -24,6 +24,7 @@ type SymbolSocketLayout struct {
 	Source                             string
 	Sockets                            map[string]SymbolSocketGroup
 	Rules                              *SymbolEmblemRules
+	Growth                             *EmblemGrowthRules
 	FixedTemplates, ResonanceTemplates map[uint32][2]uint32
 }
 type SymbolSocketGroup struct {

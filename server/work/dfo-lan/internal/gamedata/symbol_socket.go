@@ -30,6 +30,10 @@ func (s *Source) SymbolSocketLayout() (*inventory.SymbolSocketLayout, error) {
 	if e != nil {
 		return nil, e
 	}
+	layout.Growth, e = inventory.ImportEmblemGrowthRules(s.archive)
+	if e != nil {
+		return nil, e
+	}
 	layout.FixedTemplates = map[uint32][2]uint32{}
 	layout.ResonanceTemplates = map[uint32][2]uint32{}
 	tokens, e := s.archive.Tokens(mapping)

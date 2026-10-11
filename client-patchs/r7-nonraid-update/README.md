@@ -2,6 +2,8 @@
 
 本目录把 9 个 DLL、插件加载清单、假人启动配置示例与对应源码放在同一 Git 提交中。DLL 已由本次分支源码编译，源文件和载荷 SHA256 见 `paired-manifest.json`。这是基于最新上游的候选组合，尚未进行合并后实机验收。
 
+当前分支已接入徽章养成 r10，LocalFeatures 必须与重建资源和同源 Go 网关配套。请先按 [完整重建与安装步骤](../emblem-growth-r10/README.md) 准备，下面旧示例的打包命令须增加 `--resources '<资源输出目录>'`；缺少参数时打包器会拒绝 DLL 单独分发。源文件文本 SHA256 按 LF 归一化，载荷 SHA256 按实际字节校验。
+
 ## 配套文件
 
 `payload/client/` 对应游戏客户端目录，包含 `dinput8.dll`、上游 1.1.0 宿主 `ChineseLocalization.dll`，以及 `.115us-mods/` 下的 LocalFeatures、EliteCompanionPilot、WeaponSkinAnimation、HeadTextUpscale、LocalDungeonExit、RobotObjectAuthority、RobotNativeAI 和 `plugins.json`。

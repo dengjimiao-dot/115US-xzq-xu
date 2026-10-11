@@ -2,6 +2,7 @@
 #include "native_symbol_window.h"
 #include "symbol_protocol.h"
 #include "native_symbol_effects.h"
+#include "symbol_text_layout.h"
 
 namespace native_symbol_info {
 using native_symbol_window::Control;
@@ -117,7 +118,7 @@ static void header(void* tab,const symbol_wire::View& view,bool ready){
 }
 static void summary(const symbol_wire::View& view,bool ready){
     auto popup=native_symbol_window::infoPopup;
-    if(!popup||!ready)return;
+    if(!popup||!ready||native_symbol_window::infoLayout!=native_symbol_window::InfoLayout::Summary)return;
     if(lastSummary==popup&&summaryRole==view.role&&summarySequence==view.sequence&&lastInfoGeneration==native_symbol_window::infoGeneration)return;
     lastInfoGeneration=native_symbol_window::infoGeneration;
     lastSummary=popup;summaryRole=view.role;summarySequence=view.sequence;
@@ -130,13 +131,14 @@ static void summary(const symbol_wire::View& view,bool ready){
         // Same original CTP [symbol image info] type order as groups above.
         native_symbol_window::imageIndex(icon.value,i<4?int(i)+1:0);
         const auto&s=g->star;
-        coloredText(row.value,L"GradeText",s.present?std::wstring(gradeName(s.grade))+(s.grade<3?L" "+std::to_wstring(s.level)+L"阶段":L""):L"—",s.grade);
+        coloredText(row.value,L"GradeText",s.present?std::wstring(gradeName(s.grade))+(s.grade<3?L" "+std::to_wstring(s.level)+L"阶段":L""):L"—",s.present?s.grade:0);
         text(fame.value,s.present?std::to_wstring(s.fame):L"—");text(fixed.value,s.present?wide(s.fixed[mode]):L"—");
         auto resonance=s.present?compactOption(s.resonance[mode]):L"—";
-        const auto split=resonance.find_first_of(L"+-0123456789");
-        Control amount(row.value,L"FlexibleValueText",true);
-        text(extra.value,split==std::wstring::npos?resonance:resonance.substr(0,split));
-        text(amount.value,split==std::wstring::npos?L"":resonance.substr(split));
+        auto lines=symbol_text_layout::resonance(resonance,14);
+        for(size_t line=0;line<3;++line){
+            const std::wstring id=L"FlexibleOptionText"+(line?L"_"+std::to_wstring(line):L"");
+            Control c(row.value,id.c_str(),true);text(c.value,line<lines.size()?lines[line]:L"");
+        }
         for(size_t j=0;j<g->items.size();++j){Control dot(row.value,(L"slot_"+std::to_wstring(j)).c_str(),true);if(g->items[j].id)native_symbol_window::imageIndex(dot.value,dotFrame(g->items[j]));visible(dot.value,g->items[j].id!=0);}
     }
 

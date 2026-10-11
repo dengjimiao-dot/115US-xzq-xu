@@ -20,10 +20,10 @@ struct Reader {
 inline bool hex(const std::string&s,size_t n){if(s.size()!=n)return false;for(char c:s)if(!((c>='0'&&c<='9')||(c>='a'&&c<='f')))return false;return true;}
 inline void put(std::vector<uint8_t>&p,uint64_t v,size_t n){for(size_t i=0;i<n;i++)p.push_back(uint8_t(v>>(i*8)));}
 inline std::vector<uint8_t> frame(uint16_t type,uint64_t id,const std::vector<uint8_t>&body={}){
- if(type<1||type>5||!id||body.size()>MaxBody)throw std::runtime_error("invalid request");std::vector<uint8_t>p={'U','1','1','5'};put(p,1,2);put(p,type,2);put(p,id,8);put(p,body.size(),4);put(p,0,4);p.insert(p.end(),body.begin(),body.end());return p;
+ if(type<1||type>6||!id||body.size()>MaxBody)throw std::runtime_error("invalid request");std::vector<uint8_t>p={'U','1','1','5'};put(p,1,2);put(p,type,2);put(p,id,8);put(p,body.size(),4);put(p,0,4);p.insert(p.end(),body.begin(),body.end());return p;
 }
 inline uint32_t replyHeader(const std::vector<uint8_t>&p,uint16_t type,uint64_t id,uint32_t&status){
- if(p.size()!=24||memcmp(p.data(),"U115",4))throw std::runtime_error("bad reply magic");Reader r{p};r.num(4);if(r.num(2)!=1||r.num(2)!=(type|0x8000)||r.num(8)!=id)throw std::runtime_error("wrong reply generation or identity");auto n=uint32_t(r.num(4));status=uint32_t(r.num(4));if(n>MaxBody||status>4||(status!=0&&n!=0))throw std::runtime_error("invalid reply bounds");return n;
+ if(p.size()!=24||memcmp(p.data(),"U115",4))throw std::runtime_error("bad reply magic");Reader r{p};r.num(4);if(r.num(2)!=1||r.num(2)!=(type|0x8000)||r.num(8)!=id)throw std::runtime_error("wrong reply generation or identity");auto n=uint32_t(r.num(4));status=uint32_t(r.num(4));if(n>MaxBody||status>4||(status!=0&&n!=0&&type!=6))throw std::runtime_error("invalid reply bounds");return n;
 }
 inline View view(const std::vector<uint8_t>&p){
  Reader r{p};View v;v.role=r.num(8);auto n=r.num(4);if(!v.role||n>16)throw std::runtime_error("invalid view");

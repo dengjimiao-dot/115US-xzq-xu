@@ -56,8 +56,8 @@ std::vector<uint8_t> symbolTransport(uint16_t kind,uint64_t id,const std::vector
   auto p=features::frame(kind,id,body);transfer(h,p.data(),p.size(),true);
   std::vector<uint8_t> header(24);transfer(h,header.data(),header.size(),false);uint32_t status=0;
   auto n=features::replyHeader(header,kind,id,status);
-  if(status)throw std::runtime_error(("server rejected symbol operation: "+std::to_string(status)).c_str());
   std::vector<uint8_t> reply(n);if(n)transfer(h,reply.data(),reply.size(),false);
+  if(status){if(kind==6&&!reply.empty()&&features::utf8(std::string(reply.begin(),reply.end())))throw std::runtime_error(std::string(reply.begin(),reply.end()));throw std::runtime_error(("server rejected symbol operation: "+std::to_string(status)).c_str());}
   CloseHandle(h);return reply;
  }catch(...){CloseHandle(h);throw;}
 }
@@ -118,13 +118,13 @@ extern "C" __declspec(dllexport) DWORD WINAPI ModStart(){
  if(!RegisterHotKey(window,1,MOD_CONTROL|MOD_NOREPEAT,VK_F10)){if(logFile){fputs("activity Ctrl+F10 hotkey registration failed; native emblem remains available\n",logFile);fflush(logFile);}}
  native_inventory::Callbacks symbolCallbacks{};
  // Both native controllers are admitted against the same paired archive.
- if(native_inventory::resourcesMatch()&&native_symbol_runtime::install(reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr)),logFile,symbolTransport)){
+ if(native_inventory::resourcesMatch()&&native_symbol_runtime::install(reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr)),logFile,symbolTransport,native_inventory::requestEmblemPage)){
   if(!symbol_effect_sync::start(reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr)),logFile,symbolTransport)){
    if(logFile){fputs("symbol effects guard rejected; interactions disabled\n",logFile);fflush(logFile);}
   }else
-  symbolCallbacks={native_symbol_runtime::enter,native_symbol_runtime::leave,native_symbol_runtime::update,native_symbol_runtime::star,native_symbol_runtime::bag,native_symbol_runtime::header,native_symbol_runtime::incompatible,native_symbol_runtime::draggedSlot,native_symbol_window::popupRoot};
+  symbolCallbacks={native_symbol_runtime::enter,native_symbol_runtime::leave,native_symbol_runtime::update,native_symbol_runtime::star,native_symbol_runtime::bag,native_symbol_runtime::header,native_symbol_runtime::incompatible,native_symbol_runtime::draggedSlot,native_symbol_window::popupRoot,native_symbol_runtime::inventoryUpdated,native_symbol_runtime::inventoryDestroyed,native_symbol_growth::renderOverlay};
  }else if(logFile){fputs("symbol window guard rejected; interactions disabled\n",logFile);fflush(logFile);}
  if(!native_inventory::install(logFile,symbolCallbacks)){if(logFile){fputs("native inventory guard rejected; native route disabled\n",logFile);fflush(logFile);}}
- if(logFile){fputs("cumulative activity and emblem transport loaded; Ctrl+F10 opens activities\n",logFile);fflush(logFile);}MSG msg;while(GetMessageW(&msg,nullptr,0,0)>0){TranslateMessage(&msg);DispatchMessageW(&msg);}symbol_effect_sync::shutdown();native_inventory::log=nullptr;if(logFile)fclose(logFile);return 0;
+ if(logFile){fputs("v1 transport loaded; Ctrl+F10 opens legacy controller\n",logFile);fflush(logFile);}MSG msg;while(GetMessageW(&msg,nullptr,0,0)>0){TranslateMessage(&msg);DispatchMessageW(&msg);}symbol_effect_sync::shutdown();native_inventory::log=nullptr;if(logFile)fclose(logFile);return 0;
 }
 BOOL WINAPI DllMain(HMODULE m,DWORD reason,LPVOID){if(reason==DLL_PROCESS_ATTACH){selfModule=m;DisableThreadLibraryCalls(m);}return TRUE;}

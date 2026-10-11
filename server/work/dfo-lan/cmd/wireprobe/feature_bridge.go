@@ -18,7 +18,7 @@ func (client *gameConnection) featureCall(call featurebridge.Call, now time.Time
 		reply.Status = featurebridge.StatusNotReady
 		return
 	}
-	if call.Request.Kind == featurebridge.SymbolSnapshot || call.Request.Kind == featurebridge.SymbolExchange || call.Request.Kind == featurebridge.SymbolRefresh {
+	if call.Request.Kind == featurebridge.SymbolSnapshot || call.Request.Kind == featurebridge.SymbolExchange || call.Request.Kind == featurebridge.SymbolRefresh || call.Request.Kind == featurebridge.SymbolGrowth {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 		defer cancel()
 		client.symbolFeature(ctx, call.Request, &reply, now)

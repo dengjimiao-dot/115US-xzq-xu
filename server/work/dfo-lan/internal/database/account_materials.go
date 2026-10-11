@@ -19,7 +19,11 @@ func (s *Store) MigrateAccountMaterials(ctx context.Context) error {
 // AccountMaterials returns the stored counts document, or NULL when the
 // account never used the storage.
 func (s *Store) AccountMaterials(ctx context.Context, account int64) (json.RawMessage, error) {
-	return s.queries.AccountMaterials(ctx, account)
+	raw, e := s.queries.AccountMaterials(ctx, account)
+	if e != nil {
+		return nil, e
+	}
+	return mergeAccountCommonMaterials(ctx, s.queries, account, raw)
 }
 
 // CommitAccountMaterialSweep atomically rewrites one character's state and
@@ -52,6 +56,10 @@ func (s *Store) CommitAccountMaterialSweep(ctx context.Context, account, id int6
 	if e != nil {
 		return role, nil, e
 	}
+	counts, e = mergeAccountCommonMaterials(ctx, tx.queries(), account, counts)
+	if e != nil {
+		return role, nil, e
+	}
 	state, updated, e := apply(role, counts)
 	if e != nil {
 		return role, nil, e
@@ -62,7 +70,11 @@ func (s *Store) CommitAccountMaterialSweep(ctx context.Context, account, id int6
 	if e = tx.queries().UpdateCharacterState(ctx, sqlcgen.UpdateCharacterStateParams{CharacterID: id, State: state}); e != nil {
 		return role, nil, e
 	}
-	if e = tx.queries().SaveAccountMaterials(ctx, sqlcgen.SaveAccountMaterialsParams{AccountID: account, Counts: updated}); e != nil {
+	legacy, e := saveAccountCommonMaterials(ctx, tx.queries(), account, updated)
+	if e != nil {
+		return role, nil, e
+	}
+	if e = tx.queries().SaveAccountMaterials(ctx, sqlcgen.SaveAccountMaterialsParams{AccountID: account, Counts: legacy}); e != nil {
 		return role, nil, e
 	}
 	if e = tx.commit(ctx); e != nil {

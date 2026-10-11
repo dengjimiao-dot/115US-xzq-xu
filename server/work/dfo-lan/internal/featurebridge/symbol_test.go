@@ -57,7 +57,7 @@ func TestSymbolViewBoundsAndFrame(t *testing.T) {
 	if len(p) != 140 {
 		t.Fatalf("wire size %d", len(p))
 	}
-	for _, kind := range []uint16{SymbolSnapshot, SymbolExchange, SymbolRefresh, SymbolSnapshot | Response, SymbolExchange | Response, SymbolRefresh | Response} {
+	for _, kind := range []uint16{SymbolSnapshot, SymbolExchange, SymbolRefresh, SymbolGrowth, SymbolSnapshot | Response, SymbolExchange | Response, SymbolRefresh | Response, SymbolGrowth | Response} {
 		frame, e := (Frame{Kind: kind, ID: 1, Body: p}).Bytes()
 		if e != nil {
 			t.Fatal(e)
@@ -67,7 +67,7 @@ func TestSymbolViewBoundsAndFrame(t *testing.T) {
 			t.Fatalf("%+v %v", r, e)
 		}
 	}
-	for _, kind := range []uint16{0, 6, 0x1003, 0x8006} {
+	for _, kind := range []uint16{0, 7, 0x1003, 0x8007} {
 		if _, e := (Frame{Kind: kind, ID: 1}).Bytes(); e == nil {
 			t.Fatalf("accepted unknown kind %x", kind)
 		}
