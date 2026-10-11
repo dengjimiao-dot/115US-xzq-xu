@@ -48,7 +48,7 @@ type Config struct {
 	PVFDropPolicy                 string `koanf:"pvf-drop-policy" default:"configs/pvf-drop-policy.json" env:"DFO_PVF_DROP_POLICY" help:"existing basic equipment allowlist and maximum loot grade; source rules from PVF"`
 	PVFCacheDir                   string `koanf:"pvf-cache-dir" default:"runtime/pvf-cache" env:"DFO_PVF_CACHE_DIR" help:"derived PVF cache directory; - disables caching"`
 	PVFArchive                    string `koanf:"pvf-archive" env:"DFO_PVF_ARCHIVE" help:"explicit inner PVF path for candidate domains"`
-	PVFSHA256                     string `koanf:"pvf-sha256" env:"DFO_PVF_SHA256" help:"expected inner PVF SHA256; must match existing character source"`
+	PVFSHA256                        string `koanf:"pvf-sha256" env:"DFO_PVF_SHA256" help:"recorded inner PVF SHA256; differences warn and startup continues"`
 	CharacterRules                string `koanf:"character-rules" default:"configs/character-probe.json" help:"explicit local bootstrap settings"`
 	SelectProbeConfig             string `koanf:"select-probe-config" help:"opt in to current-build SELECT parser experiment; does not initialize a town"`
 	EntryBasicProbe               bool   `koanf:"entry-basic-probe" default:"false" help:"send experimental current-build minimum actor info after SELECT; does not initialize a town"`
@@ -128,6 +128,9 @@ type Config struct {
 	AttunementReward              string `koanf:"attunement-reward" env:"DFO_ATTUNEMENT_REWARD" help:"诊断：直接指定 noti 2859「调律之边界奖励」的 12 字节载荷（3 × u32 小端），用来实测它的三个字段各是什么。三种写法：24 位十六进制 / 3 个十进制 u32 / @文件路径（每次进本重读，试值不必重启服务端）。留空 = 不发（默认，客户端会保留模块里的 72/72/-1）"`
 	ScaleDeathFromHP              bool   `koanf:"scale-death-from-hp" default:"false" env:"DFO_SCALE_DEATH_FROM_HP" help:"诊断：定盘机关血量触底时由服务端兜底宣布死亡（默认关；noti 2838 修好后天平会自己死）"`
 	BoostUpEvent                  bool   `koanf:"boostup-event" default:"true" env:"DFO_BOOSTUP_EVENT" envmode:"not-zero" help:"新手成长活动 662 总开关：训练关卡、礼盒、胶囊与领奖；内容只从 PVF 直读的 boostup 域来，缺该域时本开关自动降级为关并记 warning，DFO_BOOSTUP_EVENT=0 关闭"`
+	BoostUpChallenge                 bool   `koanf:"boostup-challenge" default:"false" env:"DFO_BOOSTUP_CHALLENGE" help:"662 毕业后的可选挑战（665）源绑定与领奖，默认关"`
+	AttunementQuantityMultiplier     int    `koanf:"attunement-quantity-multiplier" default:"1" env:"DFO_ATTUNEMENT_QUANTITY_MULTIPLIER" help:"Border of Attunement fixed/additional reward draws, 1..100"`
+	AttunementRarityWeightMultiplier int    `koanf:"attunement-rarity-weight-multiplier" default:"1" env:"DFO_ATTUNEMENT_RARITY_WEIGHT_MULTIPLIER" help:"Border epic/primeval relative weight multiplier, 1..100; normalized with other tiers"`
 }
 
 // loadConfig has no file, catalog, storage, listener or process side effects.

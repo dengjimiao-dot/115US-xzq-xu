@@ -72,9 +72,10 @@ func (w *worldSession) eliteEntryProbeRequest(opcode uint16) error {
 		return nil // original special handlers validate load, stage and transition
 	}
 	switch opcode {
-	case 2015:
-		return fmt.Errorf("精锐普通战斗候选尚未接入专用传送/直进副本")
-	case 39, 43, 45, 46, 69, 70, 71, 72, 117, 2062:
+	case 39, 43, 45, 46, 69, 70, 71, 72, 117, 2015, 2062:
+		if opcode == 2015 && w.activeDungeon.Definition.ID != 100003126 {
+			return fmt.Errorf("精锐传送只允许当前 Elvenmere 会话")
+		}
 		p := w.adventureElitePrepared
 		if p == nil || !w.ordinaryEliteSelectionVisible() || p.Owner != w.role.ID || p.Channel != w.channelType ||
 			p.Settings != w.adventureEliteSnapshot || p.Selected == ([3]int64{}) || w.role.WireID == 0 || w.role.WireID == 65535 ||

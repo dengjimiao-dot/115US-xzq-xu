@@ -183,3 +183,14 @@ server/work/client-build/Script.inner.manifest.json
 !/server/work/dfo-lan/mods/README.md
 !/server/work/dfo-lan/mods/zz_mods_gen.go
 !/server/work/dfo-lan/mods/zz_mods_test.go
+
+# Owner requested paired R7 client DLLs in the same MR; build dist remains ignored.
+!/client-patchs/r7-nonraid-update/payload/client/dinput8.dll
+!/client-patchs/r7-nonraid-update/payload/client/ChineseLocalization.dll
+!/client-patchs/r7-nonraid-update/payload/client/.115us-mods/EliteCompanionPilot.dll
+!/client-patchs/r7-nonraid-update/payload/client/.115us-mods/LocalFeatures.dll
+!/client-patchs/r7-nonraid-update/payload/client/.115us-mods/HeadTextUpscale.dll
+!/client-patchs/r7-nonraid-update/payload/client/.115us-mods/LocalDungeonExit.dll
+!/client-patchs/r7-nonraid-update/payload/client/.115us-mods/RobotObjectAuthority.dll
+!/client-patchs/r7-nonraid-update/payload/client/.115us-mods/RobotNativeAI.dll
+!/client-patchs/r7-nonraid-update/payload/client/.115us-mods/WeaponSkinAnimation.dll

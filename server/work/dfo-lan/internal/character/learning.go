@@ -205,6 +205,23 @@ func (s *Service) Learn(ctx context.Context, role Character, key string, req pro
 	}
 	hasTactician, _ := s.Store.HasTacticianPremium(ctx, role.AccountID, time.Now())
 	saved, applied, e := s.Store.CommitCharacterEvent(ctx, role.AccountID, role.ID, role.ConfigVersion, key, "source-skill-learning-v1", func(current Character) (json.RawMessage, json.RawMessage, error) {
+		return s.applySkillPurchase(current, req, hasTactician)
+	})
+	saved.WireID = role.WireID
+	return saved, applied, e
+}
+
+// ApplySkillPurchase validates the ordinary source learning rules without a
+// player store. Companion archives commit the returned state atomically.
+func (s *Service) ApplySkillPurchase(current Character, req protocol.SkillPurchase) (json.RawMessage, error) {
+	if s == nil || s.Learning == nil || req.Tree != 0 || current.ConfigVersion != s.Catalog.Source.SaveIdentity() {
+		return nil, fmt.Errorf("learning service/source unavailable")
+	}
+	next, _, err := s.applySkillPurchase(current, req, false)
+	return next, err
+}
+
+func (s *Service) applySkillPurchase(current Character, req protocol.SkillPurchase, hasTactician bool) (json.RawMessage, json.RawMessage, error) {
 		var state State
 		if e := json.Unmarshal(current.State, &state); e != nil {
 			return nil, nil, e
@@ -344,9 +361,6 @@ func (s *Service) Learn(ctx context.Context, role Character, key string, req pro
 		}
 		receipt, e := json.Marshal(map[string]any{"skills": changes, "sp": points, "source": s.Learning.Source.SaveIdentity()})
 		return p, receipt, e
-	})
-	saved.WireID = role.WireID
-	return saved, applied, e
 }
 
 // Auto-bind only newly purchased active skills. Rank upgrades never undo a

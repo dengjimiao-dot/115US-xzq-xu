@@ -174,6 +174,35 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 				client.event(map[string]any{"kind": "odyssey_honor_mail_committed", "character_id": role.ID})
 			}
 		}
+		// Reconcile old Starter Boost graduates before building active/completed
+		// quest snapshots, so the introductory story cannot restart on entry.
+		if client.questService != nil && client.worldState != nil && client.worldState.boostup != nil {
+			ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+			result, skipErr := (&workflow.QuestService{Store: client.gameStore, Quest: client.questService}).ReconcileBoostMainline(ctx, role, client.worldState.boostup)
+			cancel()
+			if skipErr != nil {
+				client.event(map[string]any{"kind": "boost_mainline_pending", "character_id": role.ID, "reason": skipErr.Error()})
+			} else {
+				role = result.Role
+				if len(result.Settled) > 0 || len(result.KeyItems) > 0 {
+					client.event(map[string]any{"kind": "boost_mainline_reconciled", "character_id": role.ID, "count": len(result.Settled), "key_items": result.KeyItems, "blocked": result.Blocked})
+				}
+			}
+		}
+		// 源 `etc/titlebook.etc` `[maxlevel reward]`：满级礼盒属于任何模式的满级角色，
+		// 不在奥德赛分支内。收据是事件键，所以已到 115 的老角色在这里补发一次，
+		// 之后每次登录都是 no-op。
+		if client.progressionService != nil && client.progressionService.MaxLevelReward != nil {
+			ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+			updated, rewardApplied, rewardErr := client.progressionService.MaxLevelRewardMail(ctx, role)
+			cancel()
+			role = updated
+			if rewardErr != nil {
+				client.event(map[string]any{"kind": "max_level_reward_pending", "character_id": role.ID, "reason": rewardErr.Error()})
+			} else if rewardApplied {
+				client.event(map[string]any{"kind": "max_level_reward_mail_committed", "character_id": role.ID, "template": client.progressionService.MaxLevelReward.Template})
+			}
+		}
 		profile := *client.selectProbe
 		if client.itemService != nil && client.itemService.Boxes != nil {
 			ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
@@ -558,7 +587,12 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 				client.event(map[string]any{"kind": "oath_selection_restore_error", "character_id": role.ID, "reason": oathErr.Error()})
 				return dispatchHandled
 			}
-			plan.OathSystemInfo, oathErr = protocol.OathSystemInfo(selection.Level, selection.Option)
+			truth, truthErr := client.gameStore.OathTruth(context.Background(), client.developmentAccount, role.ID)
+			if truthErr != nil {
+				client.event(map[string]any{"kind": "oath_truth_restore_error", "reason": truthErr.Error()})
+				return dispatchHandled
+			}
+			plan.OathSystemInfo, oathErr = protocol.OathSystemInfoWithTruth(selection.Level, selection.Option, truth.Level, truth.Options)
 			if oathErr != nil {
 				client.event(map[string]any{"kind": "oath_selection_restore_error", "character_id": role.ID, "reason": oathErr.Error()})
 				return dispatchHandled
@@ -569,7 +603,7 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 			// ⚠️ 装备库→誓约 页签的「已添加的 誓约积分」/`?/750次` **不由这一对值驱动**：
 			// 实机两种字段顺序下它都仍为 0，该页统计的是"登记进装备库的誓约装备"
 			// （客户端文案 101039328 `… registered in the Armory`）；见
-			// docs/protocol/oath-set-points-20261004.md §7.6。
+			// docs/protocol/upstream/oath-set-points-20261004.md §7.6。
 			plan.OathPartSetPoints = append(plan.OathPartSetPoints,
 				client.worldState.oathPointPackets()...)
 		}
@@ -690,6 +724,12 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 		if e != nil {
 			client.event(map[string]any{"kind": "skin_selection_restore_error", "error": e.Error()})
 			plan.SkinSelection = nil
+			e = nil
+		}
+		plan.WeaponSkinActor, e = weaponSkinActorRestore(role.State)
+		if e != nil {
+			client.event(map[string]any{"kind": "weapon_skin_actor_restore_error", "error": e.Error()})
+			plan.WeaponSkinActor = nil
 			e = nil
 		}
 		// 「最近获得」那五行格只由 NOTI1547 喂，而这帧是整表重建，所以入场必须
@@ -956,6 +996,16 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 				plan.CreatureList, _ = inventory.CreatureListPayload(role.State)
 				plan.CreatureGrowth, _ = inventory.CreatureGrowthPayload(role.State)
 			}
+			if e == nil {
+				plan.TitleBooks, e = titleBookRestore(role.State)
+			}
+			if e == nil {
+				var titleBag inventory.Bag
+				titleBag, e = inventory.ReadBag(role.State)
+				if e == nil {
+					plan.TitleAppearance = protocol.TitleAppearanceSuccess(titleBag.TitleSkin)
+				}
+			}
 			if e != nil {
 				client.event(map[string]any{"kind": "entry_worn_error", "error": e.Error()})
 				return dispatchHandled
@@ -1106,6 +1156,9 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 		}
 		client.comboState.lastNotify = nil
 		client.selectedCharacterID = role.ID
+		if client.restoreSocialIdentity() != nil {
+			return dispatchClose
+		}
 		if client.worldState != nil {
 			client.worldState.fameInitialized = false
 			if client.sendPlan(client.worldState.appendFameUpdate(nil, client.event), nil) != nil {

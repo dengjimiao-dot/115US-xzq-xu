@@ -5,10 +5,13 @@ import (
 	"fmt"
 )
 
-// SoloPartyInfo is the current99-byte ordinary PARTY_INFO block for one
-// owned local actor in slot0. Empty optional groups are distinct from the
-// old90 layout. The native reader passes slot0/actor to145f10390.
-func SoloPartyInfo(actor uint16) ([]byte, error) {
+// SoloPartyInfo preserves the upstream 99-byte raid projection when no context
+// is supplied. Explicit ordinary-party context uses the native seat projection.
+func SoloPartyInfo(actor uint16, contexts ...[2]byte) ([]byte, error) {
+	if len(contexts) > 0 {
+		return PartyRosterSeats115(1, contexts[0], [4]uint16{actor}, actor, 4)
+	}
+
 	if actor == 0 || actor == 65535 {
 		return nil, fmt.Errorf("invalid solo party actor")
 	}
@@ -19,4 +22,5 @@ func SoloPartyInfo(actor uint16) ([]byte, error) {
 	p[61] = 1 // one member
 	binary.LittleEndian.PutUint16(p[63:], actor)
 	return p, nil
+
 }

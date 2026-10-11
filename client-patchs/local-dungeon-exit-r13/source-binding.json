@@ -1,0 +1,27 @@
+{
+  "client_sha256": "515fefa1c71577a15f90513f860270320f3502bc492ad596f10cf176b91c21eb",
+  "functions": {
+    "Menu": {
+      "rva": "0x1a04880",
+      "bytes": "40565741564883ec30"
+    },
+    "State": {
+      "rva": "0x59a90f0",
+      "bytes": "40534883ec20488bd9488b0df0a8cd08"
+    },
+    "Dungeon": {
+      "rva": "0x59a9080",
+      "bytes": "4883ec28e8f70000004885c0740c488b"
+    },
+    "Player": {
+      "rva": "0x5efafb0",
+      "bytes": "488b0dd11a03094533c9488b15cf1a03"
+    }
+  },
+  "menu_actions": [
+    22,
+    23,
+    30
+  ],
+  "live_writes": 0
+}

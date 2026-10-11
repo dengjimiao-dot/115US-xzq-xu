@@ -3,12 +3,18 @@ package loginchannel
 import (
 	"bytes"
 	"dfolan/internal/game/wire"
+	"encoding/hex"
 	"os"
+	"strings"
 	"testing"
 )
 
 func TestActualLoginProjection(t *testing.T) {
-	raw, err := os.ReadFile("../../../runtime/login_ok.bin")
+	raw, err := os.ReadFile("testdata/login_ok.hex")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err = hex.DecodeString(strings.TrimSpace(string(raw)))
 	if err != nil {
 		t.Fatal(err)
 	}

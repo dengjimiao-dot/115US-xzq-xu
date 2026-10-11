@@ -1,0 +1,30 @@
+{
+  "client_sha256": "515fefa1c71577a15f90513f860270320f3502bc492ad596f10cf176b91c21eb",
+  "functions": {
+    "Authority": {
+      "rva": "0x5b89780",
+      "bytes": "488bc45741544155415641574883ec40"
+    },
+    "State": {
+      "rva": "0x59a90f0",
+      "bytes": "40534883ec20488bd9488b0df0a8cd08"
+    },
+    "LocalSeat": {
+      "rva": "0x59a9d30",
+      "bytes": "4883ec28488b0d5523cc08e8b0f3ffff"
+    },
+    "Actor": {
+      "rva": "0x59a9de0",
+      "bytes": "40534883ec20488b0da322cc088bdae8"
+    },
+    "Identity": {
+      "rva": "0x5b8b0a0",
+      "bytes": "48895c2410574883ec20488bf9488d54"
+    },
+    "EffectOwner": {
+      "rva": "0x5ba4c20",
+      "bytes": "40534883ec20488b81b02100004885c0"
+    }
+  },
+  "scope": "local lease plus native same-map type3/4 and verified native fake-parent type17 entities; regular player entity unchanged"
+}

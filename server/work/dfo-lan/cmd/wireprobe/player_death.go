@@ -212,3 +212,11 @@ func (w *worldSession) deathAfterSettlement() ([]outboundPacket, error) {
 		{"player_death_state", 0, 32, body},
 	}, nil
 }
+
+// Timers are bound to one death report. An old timer must not terminate a
+// later death or a new dungeon after a revive, reconnect or room return.
+func (w *worldSession) deathAttemptActive(run string, sequence uint32) bool {
+	return w != nil && w.pilotDeath != nil && w.pilotDeath.Dead &&
+		w.activeDungeon != nil && w.pilotDeath.Run == run &&
+		w.pilotDeath.Sequence == sequence && w.activeDungeon.RunID == run
+}

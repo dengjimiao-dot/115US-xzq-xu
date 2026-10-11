@@ -41,4 +41,3 @@ func AvatarClosetInfo(slots byte) ([]byte, error) {
 func AvatarClosetSet() []byte {
 	return []byte{0, 0, 0, 0}
 }
-

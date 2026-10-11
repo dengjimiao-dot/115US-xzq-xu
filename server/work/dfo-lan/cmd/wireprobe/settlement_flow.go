@@ -76,7 +76,20 @@ func (w *worldSession) dungeonResult(p []byte) ([]outboundPacket, error) {
 	if w == nil || w.progression == nil || w.activeDungeon == nil || !w.activeDungeon.Completed() || !w.completionSent {
 		return nil, fmt.Errorf("result before committed boss completion")
 	}
-	r, e := protocol.DecodePlayResult(p)
+	var r protocol.PlayResultRequest
+	var e error
+	if party := w.townRobotPartySnapshot(); party != nil && party.dungeon && w.townRobotDungeonChannelAllowed() {
+		// CMD46 reports every ordinary player entity, including local robots.
+		// Authorize the exact owned instance roster before any reward transaction;
+		// only this connection's real character receives experience/cards.
+		actors := []uint16{w.role.WireID}
+		for _, bot := range party.bots {
+			actors = append(actors, bot.peer.actorID)
+		}
+		r, e = protocol.DecodePartyPlayResult115(p, w.role.WireID, actors)
+	} else {
+		r, e = protocol.DecodePlayResult(p)
+	}
 	if e != nil {
 		return nil, e
 	}
@@ -265,6 +278,12 @@ func (w *worldSession) dungeonResult(p []byte) ([]outboundPacket, error) {
 		if restore, e := w.characters.EntrySkills(role); e == nil {
 			plan = append(plan, outboundPacket{"skill_state_restored", 0, 19, restore})
 			plan, e = appendSkillPresetRestore(plan, w.characters, role, "skill_preset_restored_after_settlement")
+			if e != nil {
+				return nil, e
+			}
+			// NOTI19 rebuilds the skill view. Replay the saved dark-knight
+			// arrangement with the verified NOTI433 layout after its preset.
+			plan, e = appendComboSkillRestore(plan, w.characters, role)
 			if e != nil {
 				return nil, e
 			}

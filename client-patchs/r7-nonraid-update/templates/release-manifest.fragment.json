@@ -1,0 +1,10 @@
+{
+  "local_features": {
+    "robots": {
+      "enabled": true,
+      "count": 69,
+      "storage": "server/work/dfo-lan/runtime/storage/town-robots-integrated.json",
+      "template": "server/work/dfo-lan/configs/robots-template.json"
+    }
+  }
+}

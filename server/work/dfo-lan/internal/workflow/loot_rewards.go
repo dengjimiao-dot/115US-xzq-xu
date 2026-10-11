@@ -8,12 +8,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // LootService commits and replays state prepared by the loot domain.
 type LootService struct {
 	Store *database.Store
 	Loot  *loot.Service
+	ElvenmereNow func() time.Time
 }
 
 func (s *LootService) FreezeMoonReward(ctx context.Context, role database.Character, run *dungeon.Session, p loot.MoonRewardPolicy) (loot.MoonRewardPlan, error) {
@@ -334,6 +336,7 @@ func (s *LootService) RecoverBlackPurgatoryCards(ctx context.Context, role datab
 	}
 	return role, errors.Join(failures...)
 }
+
 // FreezeMoonSourceReward 与 FreezeMoonReward 同形，只是策略换成**源声明驱动**的
 // loot.MoonSourcePolicy（见 internal/loot/moon_source_rewards.go）。
 //
