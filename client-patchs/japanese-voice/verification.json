@@ -1,0 +1,41 @@
+{
+  "result": "passed",
+  "checks": [
+    "只读校验不修改客户端",
+    "游戏运行时拒绝安装",
+    "安装备份与原子替换，其他硬链接保留原数据",
+    "完整原文件备份校验",
+    "重复安装不重复写入",
+    "回退和重复回退逐字节恢复",
+    "损坏补丁拒绝写入",
+    "原资源不匹配时保留其他修改",
+    "部分安装状态拒绝继续覆盖",
+    "中途锁定文件失败后自动恢复已写入文件",
+    "中断安装记录可以恢复部分安装",
+    "回退前发现第三方改动则停止并保留",
+    "检测额外语音补丁避免重名覆盖",
+    "安装和回退无遗留暂存音频"
+  ],
+  "scope": "Only isolated fixture files were installed/restored. Process guard mocked only for fixture tests, including running-game denial.",
+  "payload_files": 95,
+  "changed_audio": 31242,
+  "rebuild": {
+    "payload_files": 95,
+    "all_payload_hashes_equal_delivery": true,
+    "all_native_entries_reverified": true
+  },
+  "modkit": {
+    "full_95_resource_mod_verify": "passed",
+    "fixture_verify_plan_install_uninstall": "passed",
+    "exact_restoration": true,
+    "other_hardlink_preserved": true
+  },
+  "live_game_verified": false,
+  "storage": {
+    "native_npk": 93,
+    "split_npk": 2,
+    "lfs_objects": 97,
+    "assembly_exact_sha256": "passed",
+    "repeat_assembly": "passed"
+  }
+}
