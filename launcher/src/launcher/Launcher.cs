@@ -56,17 +56,21 @@ namespace Local115US {
    return Path.Combine(root,"client");
   }
   public static void Validate(string root,string client,bool hash,Action<string> notice=null) {
-   foreach(string p in new[]{Backend(root),Path.Combine(Module(root),"bin","wireprobe-pvf.exe"),Path.Combine(Module(root),"configs","pvf-default.json"),Path.Combine(root,"server","work","dfo_probe_tools","probe.exe"),Path.Combine(client,"DFO.exe"),Path.Combine(client,"Script.pvf"),Path.Combine(client,"sk.dat")})
+   string binary=ProfileBinary(root);
+   foreach(string p in new[]{Backend(root),Path.Combine(Module(root),binary.Replace('/','\\')),Path.Combine(Module(root),"configs","pvf-default.json"),Path.Combine(root,"server","work","dfo_probe_tools","probe.exe"),Path.Combine(client,"DFO.exe"),Path.Combine(client,"Script.pvf"),Path.Combine(client,"sk.dat")})
     if(!File.Exists(p))throw new Exception("文件缺失："+p+"\n请完整解压压缩包，或在目录设置中选择正确位置。");
-   var prof=Read(Path.Combine(Module(root),"configs","pvf-default.json"));
-   if(Get(prof,"binary","").Replace('\\','/')!="bin/wireprobe-pvf.exe")throw new Exception("当前目录不是配套的本地版默认配置。");
    if(hash)foreach(string line in ReleaseManifest.Validate(root,client,true))if(line.Contains("提示：")){if(notice!=null)notice(line);else Console.WriteLine(line); }
+  }
+  public static string ProfileBinary(string root) {
+   string binary=Get(Read(Path.Combine(Module(root),"configs","pvf-default.json")),"binary","").Replace('\\','/');
+   if(binary!="bin/wireprobe-pvf.exe"&&binary!="bin/wireprobe-handoff-source.exe")throw new Exception("当前目录不是配套的本地版配置。");
+   return binary;
   }
   public static void Prepare(string root,string client,bool initialize=false,Action<string> notice=null) {
    Validate(root,client,true,notice);var context=new PackageContext(root,client,false);
    if(!initialize){AssertCheckClient(root,client);return;}
    string launch=Path.Combine(root,"server","launcher.local.json");var cfg=Read(launch);
-   cfg["client_dir"]=PersistedClientPath(root,client);cfg["server_binary"]="work/dfo-lan/bin/wireprobe-pvf.exe";Write(launch,cfg);
+   cfg["client_dir"]=PersistedClientPath(root,client);cfg["server_binary"]="work/dfo-lan/"+ProfileBinary(root);Write(launch,cfg);
    InitializeMissingStorage(context);
   }
   static void AssertCheckClient(string root,string client){

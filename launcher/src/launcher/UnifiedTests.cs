@@ -48,6 +48,16 @@ namespace Local115US {
     File.WriteAllText(gameFile,"after!");string storageHash=Core.Hash(cfg);var notices=new List<string>();Core.Prepare(a,b,false,notices.Add);
     Assert(notices.Exists(x=>x.Contains("哈希值不一致")&&x.Contains(recorded)&&x.Contains("继续启动"))&&Core.Hash(cfg)==storageHash&&File.ReadAllText(gameFile)=="after!");
    });
+   Check("candidate profile selects candidate and rejects foreign binary",()=>{
+    string profile=Path.Combine(Core.Module(a),"configs","pvf-default.json");
+    string candidate=Path.Combine(Core.Module(a),"bin","wireprobe-handoff-source.exe");
+    File.WriteAllText(candidate,"candidate");
+    Core.Write(profile,new Dictionary<string,object>{{"binary","bin/wireprobe-handoff-source.exe"}});
+    Assert(Core.ProfileBinary(a)=="bin/wireprobe-handoff-source.exe");Core.Validate(a,b,false);
+    Core.Write(profile,new Dictionary<string,object>{{"binary","../foreign.exe"}});
+    bool rejected=false;try{Core.Validate(a,b,false);}catch{rejected=true;}Assert(rejected);
+    Core.Write(profile,new Dictionary<string,object>{{"binary","bin/wireprobe-pvf.exe"}});
+   });
    Check("command argument quoting",()=>{Assert(Core.Quote(@"G:\中文 路径\")=="\"G:\\中文 路径\\\\\"");Assert(Core.Quote("a\"b")=="\"a\\\"b\"");});
    Check("client memory notice threshold, hysteresis and peak retained",()=>{var n=new ClientMemoryNotice();long cap=ClientMemoryNotice.LimitBytes;Assert(cap==16L*1024*1024*1024);n.Observe(9L*1024*1024*1024);Assert(!n.NearLimit&&n.ExitHint=="");n.Observe(cap*9/10);Assert(n.NearLimit&&n.Hint(cap*9/10).Contains("接近上限"));n.Observe(cap*86/100);Assert(n.NearLimit);n.Observe(cap*84/100);Assert(!n.NearLimit&&n.ExitHint.Contains("不能单独证明"));});
    Check("client memory notice resets for new session",()=>{var n=new ClientMemoryNotice();Assert(!n.NearLimit&&n.PeakBytes==0&&n.ExitHint=="");n.Observe(-1);Assert(n.PeakBytes==0);});

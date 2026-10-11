@@ -56,6 +56,7 @@ var flagKeys = map[string]bool{
 	"DFO_ODYSSEY_TEMPORARY_CREDITS": true,
 	"DFO_SHOP_OPEN_ALL":             true,
 	"DFO_LOCAL_GM":                  true,
+	"DFO_BOOST_AUTO_OVERFLOW_MAIL":  true,
 	"DFO_PVF_VERIFY_BASELINES":      true,
 	"DFO_ATTUNEMENT_REBALANCE":      true,
 	"DFO_FATIGUE_FREE":              true,

@@ -36,6 +36,9 @@ func (w *worldSession) boostStepRequest(ctx context.Context, p []byte, id uint16
 		return refuse(e)
 	}
 	w.role = next
+	if w.loot.BoostAutoOverflowMail && (len(receipt.MailIDs) > 0 || !applied && claim && receipt.AutoOpened) && w.notifyBoostMail != nil {
+		w.notifyBoostMail(next.ID)
+	}
 	// A prior equipment event update can be retried here from durable facts.
 	w.reconcileBoostEquipment()
 	next = w.role
@@ -59,16 +62,16 @@ func (w *worldSession) boostStepRequest(ctx context.Context, p []byte, id uint16
 		}
 	}
 	if claim {
-		// donor 基线在这里发的是「奖励落包落地帧 + 溢出邮寄」：本树的自动开盒
-		// 走同一条 inventory.Awarder 发放线，装不下整步回滚、不代发邮件
-		// （见 internal/loot/boostup_autobox.go 的约定），所以增量帧就是背包帧。
+		// Ordinary awards reuse the existing item update. Partial overflow
+		// rebuilds the whole ordinary container so every merged stack is shown;
+		// mail notifications use the established mailbox channel.
 		bag, err := inventory.ReadBag(next.State)
 		if err != nil {
 			return nil, err
 		}
 		packetID := uint16(14)
 		body, err := protocol.InventoryUpdate(stackSlotRows(bag, receipt.Slots...))
-		if !applied {
+		if !applied || len(receipt.MailIDs) > 0 {
 			packetID = 13
 			body, err = w.loot.Bootstrap(workflow.LootRole(next))
 		}

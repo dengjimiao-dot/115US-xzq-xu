@@ -1,0 +1,1316 @@
+{
+  "schema": 1,
+  "created_local": "2026-10-11",
+  "default_client": "",
+  "source_archive": "日服语音补丁 - 狄瑞吉攻坚战版本.zip",
+  "source_sha256": "6ee9d54c80490b9ff1d7f2d0e25cb086869221ef737ad8b5a3f071b5aced2416",
+  "supplement_archive": "DNF完美日服语音包.rar",
+  "supplement_sha256": "de22568af2e4e2618420264901965cc6716fc6814b1100c4ff88de087df466b3",
+  "source_entries": 54390,
+  "unique_combined_entries": 69495,
+  "matched_entries": 68934,
+  "primary_matched": 53839,
+  "perfect_supplement_matched": 15095,
+  "unmatched_entries": 561,
+  "changed_entries": 31242,
+  "files": [
+    {
+      "name": "sounds_char_apc.npk",
+      "original_sha256": "ae2d7bbd2ae60bd11deb72f4ed724c8572fbfceae0c35eff5e2f6d600650df3e",
+      "patched_sha256": "137efc55168beac9e58f2126b5e05e32e6d0fe81ab0daf92a1a0d40142010ed5",
+      "original_size": 86924286,
+      "patched_size": 89610452,
+      "entries": 1916,
+      "matched": 1856,
+      "changed": 1778
+    },
+    {
+      "name": "sounds_char_archer.npk",
+      "original_sha256": "2558655bf9ef878b1dfc43aa579380950bcb03da97210a8ef08a7b58a970d0b9",
+      "patched_sha256": "9831756ff7b4514625884811ea3d51f2889ac70aaf9f53e4182e0381fb94f963",
+      "original_size": 40320422,
+      "patched_size": 40356949,
+      "entries": 785,
+      "matched": 747,
+      "changed": 651
+    },
+    {
+      "name": "sounds_char_creator.npk",
+      "original_sha256": "fbedc1415a182b3bb779d9db645411ed0ad7f3cbb42a5e71247e3bf7fa4e2b18",
+      "patched_sha256": "21d40cca5f48bf536174c806b220a37683c5d62dd4f5a8dd2232cfd8a03f6b23",
+      "original_size": 6091270,
+      "patched_size": 6065743,
+      "entries": 97,
+      "matched": 91,
+      "changed": 91
+    },
+    {
+      "name": "sounds_char_darkknight.npk",
+      "original_sha256": "71358168c31bd571b5960d7cbf71de5a689003d10f725ca037ec9484966082dd",
+      "patched_sha256": "7f3ee3ec3879688e85e86f794d2b8aaf7c37ea6f174160bfc5e07f43f0858dac",
+      "original_size": 6095765,
+      "patched_size": 6079355,
+      "entries": 111,
+      "matched": 105,
+      "changed": 105
+    },
+    {
+      "name": "sounds_char_demonic_lancer.npk",
+      "original_sha256": "a03f8603c3681a6de03ca53dcaceedd5ee756ce4c699d5f345685693880a7b37",
+      "patched_sha256": "1406f09f0ee59bcedb9a6cd9cd0041fe91c4eb911a7f31db9690db6f2eac761c",
+      "original_size": 40642620,
+      "patched_size": 40709208,
+      "entries": 365,
+      "matched": 332,
+      "changed": 332
+    },
+    {
+      "name": "sounds_char_fighter.npk",
+      "original_sha256": "56e30ef4910cf5149603cbb0ed2a34bfac142e169138279eee19746127644c08",
+      "patched_sha256": "541017f1f1d8217befcb38a5fc5238f44c706ecccf3262deec3d26304a4a94ad",
+      "original_size": 26549322,
+      "patched_size": 26382546,
+      "entries": 328,
+      "matched": 302,
+      "changed": 281
+    },
+    {
+      "name": "sounds_char_fighter_m.npk",
+      "original_sha256": "0c2b529be5f730bd3a63055bc44f16c7a652cbde0c4892060cba0306c1d7d040",
+      "patched_sha256": "c7da6dfc8a13ad6fe2bcbde1855e62b29104e5e1f99dec9155ce2ee60d09d136",
+      "original_size": 25325121,
+      "patched_size": 27650857,
+      "entries": 332,
+      "matched": 300,
+      "changed": 300
+    },
+    {
+      "name": "sounds_char_gunblader.npk",
+      "original_sha256": "7e7f2a3a8c1eb25bfea7df7dfe8683cc6361ef1f770ed9cf23c2907e8f5f79ea",
+      "patched_sha256": "ddd9f929ea802b2a2bc1951d94c0236eea1424b0e775bb09b4352c4a9658686f",
+      "original_size": 29473456,
+      "patched_size": 29069611,
+      "entries": 409,
+      "matched": 385,
+      "changed": 385
+    },
+    {
+      "name": "sounds_char_gunner.npk",
+      "original_sha256": "3787f1a2ec561f9b1fbce0dac02a01be002b68513d64e297bf44b175795d5811",
+      "patched_sha256": "641a0ace153fc9dcb8daf0dc185e57c9837c7e1f681909350c011a5f3a1a6b97",
+      "original_size": 39272201,
+      "patched_size": 39105651,
+      "entries": 382,
+      "matched": 348,
+      "changed": 335
+    },
+    {
+      "name": "sounds_char_gunner_effect.npk",
+      "original_sha256": "811d976199a35902ed31c761ec87f8c316702fd33ee1455aace3a13ae483ff45",
+      "patched_sha256": "3011091055134b0196dd9d1da181d7feeb16e8bfd8cfedafb85e2513097d1afb",
+      "original_size": 15550193,
+      "patched_size": 15581083,
+      "entries": 621,
+      "matched": 13,
+      "changed": 13
+    },
+    {
+      "name": "sounds_char_gunner_f.npk",
+      "original_sha256": "2557f78475e3eccaa495cc9e2173d8ddf5541e362ec0bde05f9c23240b3b8211",
+      "patched_sha256": "ccf60f1bed8c4d0798497ced1d1a4ef7db4a630b375baea38939b1f9fadcde2d",
+      "original_size": 43303543,
+      "patched_size": 43122479,
+      "entries": 423,
+      "matched": 385,
+      "changed": 385
+    },
+    {
+      "name": "sounds_char_knight.npk",
+      "original_sha256": "3ade3da432ebc3b9d6f896c70759d91a4a8c17d3374b32e36eda94f328157984",
+      "patched_sha256": "7fa2de10aec760c161ce1d805e8d8405baec8ca51d6c1a21f0daed48a6edc523",
+      "original_size": 26970427,
+      "patched_size": 27741796,
+      "entries": 386,
+      "matched": 352,
+      "changed": 349
+    },
+    {
+      "name": "sounds_char_priest.npk",
+      "original_sha256": "6fe5feaa7e151c54ff70115b14178060b7ad3d1bf6f3f55ae254f6b790103f18",
+      "patched_sha256": "347545ed78c26d6038858a9891e37d9cc12aee3d68ac3be71ed5171d044b6428",
+      "original_size": 36257129,
+      "patched_size": 36520609,
+      "entries": 405,
+      "matched": 375,
+      "changed": 373
+    },
+    {
+      "name": "sounds_char_priest_f.npk",
+      "original_sha256": "ba64c821b3b3d78a15c2f4d14c73f53e827107043dd0f142b8f84f83057b799b",
+      "patched_sha256": "2f1b363e5b91fe40c02a00a4a0a66a7f6945e68a724648f5fe4c437c5d5f038b",
+      "original_size": 44799624,
+      "patched_size": 44432276,
+      "entries": 433,
+      "matched": 404,
+      "changed": 402
+    },
+    {
+      "name": "sounds_char_swordman.npk",
+      "original_sha256": "f3ec0564d26a0565f28723d712c76551c81e53db12fb8c03a16fbb44632d3399",
+      "patched_sha256": "0ec7ce632bda35a2eca84c5e837ed861ba3d52121f50e19fface245c1f23163e",
+      "original_size": 27510603,
+      "patched_size": 28166619,
+      "entries": 406,
+      "matched": 370,
+      "changed": 370
+    },
+    {
+      "name": "sounds_char_swordman_effect.npk",
+      "original_sha256": "96acc143a3649d04cf20ddb4dc0e16984871acab42bf30749d490d845ab25559",
+      "patched_sha256": "ae040ce18d86f7ebbd258db6fcadd72ba1f368d5f76c2f37bd6a697afe0cbc42",
+      "original_size": 12576497,
+      "patched_size": 12558814,
+      "entries": 573,
+      "matched": 3,
+      "changed": 3
+    },
+    {
+      "name": "sounds_char_swordman_f.npk",
+      "original_sha256": "45a3b1e23a33ebb47252825de8832ed70e5e3f9e82cf7a85e1550a4cf6fe497a",
+      "patched_sha256": "cba1d067fb02984b80fee455adfabbe1d077642a94d557aca1e1db666e927383",
+      "original_size": 41813108,
+      "patched_size": 41192364,
+      "entries": 418,
+      "matched": 384,
+      "changed": 384
+    },
+    {
+      "name": "sounds_char_swordman_f_effect.npk",
+      "original_sha256": "c6b3b51c27535f802bc16746964817e90bf38f842bdd4fd75c8373be9aa5c1b4",
+      "patched_sha256": "0dad41e9538a2fbfc7946ea714367591105036fd60a74adfa828a600c17afa15",
+      "original_size": 16289586,
+      "patched_size": 16572931,
+      "entries": 824,
+      "matched": 32,
+      "changed": 32
+    },
+    {
+      "name": "sounds_char_thief.npk",
+      "original_sha256": "61c24e161312093cfbf57ef60a28ed949a48921a80b8a6d0013940ed6eb33cce",
+      "patched_sha256": "7ea3056f34d77729db1789089fea613cf73407c19a401bdff12d73adfcc004cc",
+      "original_size": 20687606,
+      "patched_size": 20453167,
+      "entries": 286,
+      "matched": 256,
+      "changed": 256
+    },
+    {
+      "name": "sounds_char_thief_effect.npk",
+      "original_sha256": "d262c753207ab86e4987a8af5b7409d5d296283017c7a182784790236d0cb6dd",
+      "patched_sha256": "9a32223e4821aa84e931e9a3aa8459bfd8284a9132002564194df4cf21c6d9bc",
+      "original_size": 10110100,
+      "patched_size": 10283399,
+      "entries": 478,
+      "matched": 478,
+      "changed": 59
+    },
+    {
+      "name": "sounds_char_wizard.npk",
+      "original_sha256": "0f0d1b88419a515f0fc4e028d6d5a3964b91dadba69a47209b2087c2c14c180c",
+      "patched_sha256": "107f67bc7149c3a4ece2bb30d2f415da7ba0a8b1a3827064800cbe2323f3e877",
+      "original_size": 38498949,
+      "patched_size": 39374389,
+      "entries": 680,
+      "matched": 642,
+      "changed": 642
+    },
+    {
+      "name": "sounds_char_wizard_m.npk",
+      "original_sha256": "5f1ad4436e46564e462383471cb0c89ea65926abfb0c51786c6498782b2591d2",
+      "patched_sha256": "1635fcc97071fc13f3bfc16de043b5cc426a634db1c0bcd1a792c26c82e72c56",
+      "original_size": 40490271,
+      "patched_size": 40739815,
+      "entries": 379,
+      "matched": 343,
+      "changed": 343
+    },
+    {
+      "name": "sounds_char_wizard_m_effect.npk",
+      "original_sha256": "bc8b95cfe80ff3cd5af7bd31bdffdfda2feefe42142bdb9351f6d9ba0ff32c86",
+      "patched_sha256": "b0f4df628f37ece53cfa9d49567c7cb6e1ef23afd65e7ff4ccd1486d53a2cef5",
+      "original_size": 12908012,
+      "patched_size": 12976372,
+      "entries": 580,
+      "matched": 580,
+      "changed": 27
+    },
+    {
+      "name": "sounds_effect.npk",
+      "original_sha256": "182d11b4b8f3cb9a77dd8e39206a8020b679a0568638588e685e2c30d8f09bf1",
+      "patched_sha256": "1109b749f070ad0f5302ecd695527c6d35d3f6b25aa29487c87fab7b9c058a93",
+      "original_size": 40860007,
+      "patched_size": 40864414,
+      "entries": 1500,
+      "matched": 1,
+      "changed": 1
+    },
+    {
+      "name": "sounds_effect_duel_match.npk",
+      "original_sha256": "137d3515dc9a2d4466ffb5bbf592b156f4d75ba47b21114605c74add00013997",
+      "patched_sha256": "a90ed742113cdd1b7191e17672d9555d65ecafe26c12515495fcb1c1fff7ab63",
+      "original_size": 1099973,
+      "patched_size": 1074847,
+      "entries": 38,
+      "matched": 38,
+      "changed": 36
+    },
+    {
+      "name": "sounds_effect_magic.npk",
+      "original_sha256": "90efd3fb9146f24612e78af091bc8690b7794be682bdf0a69610a2f4dd0541c8",
+      "patched_sha256": "61d775d33ce88e5d685085d89991c99b0c4c817aca88db3d4a44f0b95873a1c4",
+      "original_size": 1375512,
+      "patched_size": 1353440,
+      "entries": 66,
+      "matched": 1,
+      "changed": 1
+    },
+    {
+      "name": "sounds_mon_act1.npk",
+      "original_sha256": "8aceccac479713a5313d3c895896127210c7cf2ee866fcff88c7e394ec390942",
+      "patched_sha256": "1fb1583b48ccfec40b6c82434bb8f99eb90a95a7b9b88b072a8268f325034b6d",
+      "original_size": 8056024,
+      "patched_size": 8169208,
+      "entries": 379,
+      "matched": 379,
+      "changed": 129
+    },
+    {
+      "name": "sounds_mon_act2.npk",
+      "original_sha256": "1d45d364ee38de8025cb4b878595d97a0a674155979673811599935b662641cf",
+      "patched_sha256": "f438d596f66d169bc9e1daa21a17b3896166ebdf379d88465827ffaf8126a423",
+      "original_size": 1935167,
+      "patched_size": 1857379,
+      "entries": 117,
+      "matched": 117,
+      "changed": 12
+    },
+    {
+      "name": "sounds_mon_act3.npk",
+      "original_sha256": "a2223924427522cf262a4c73dc85f6deeffaf1b819ecd65d30524ff38316cc9c",
+      "patched_sha256": "4e4679582185e5c45f8597e8c0e8f05a05aa69a9fa638ed7e694cdf7af473306",
+      "original_size": 3168362,
+      "patched_size": 3340179,
+      "entries": 164,
+      "matched": 164,
+      "changed": 39
+    },
+    {
+      "name": "sounds_mon_act4.npk",
+      "original_sha256": "838598cc14b7adedc3cd7f2fa616d764bfad27877b0889fd2dd225f7a104db9e",
+      "patched_sha256": "aae497e1e2cbb287be5293c133750a9ca1aa894dbbfc88b99278b7195012609d",
+      "original_size": 3540745,
+      "patched_size": 3664673,
+      "entries": 167,
+      "matched": 167,
+      "changed": 53
+    },
+    {
+      "name": "sounds_mon_act5.npk",
+      "original_sha256": "5ea807799bc62e4a419ef4b0d2354e9d8cdda68fae019042c70bdf92b28c6705",
+      "patched_sha256": "db98d96b5bcf5c32bac9ebc8b4d66c589b443a60632a09cc86159198c8122af5",
+      "original_size": 9751042,
+      "patched_size": 8819661,
+      "entries": 363,
+      "matched": 363,
+      "changed": 215
+    },
+    {
+      "name": "sounds_mon_act6.npk",
+      "original_sha256": "f17e5653045a3e82eae56e55e270d1bde0fadf807a9ede02d7c6feb47e145bc8",
+      "patched_sha256": "c2aaa15bc0d681c33e3bd757d513d33b20e6850f527c449c31cb471af17740a5",
+      "original_size": 4091699,
+      "patched_size": 4086758,
+      "entries": 262,
+      "matched": 262,
+      "changed": 96
+    },
+    {
+      "name": "sounds_mon_act7.npk",
+      "original_sha256": "3256f56cb3021043c7fdf0324b8133ee1597d869a8d6a979c9e8b662e6329331",
+      "patched_sha256": "e52228635bcdc99f3bb156aaa2a3cfdf33882e76593fba193594ab210b418999",
+      "original_size": 7450674,
+      "patched_size": 7974892,
+      "entries": 355,
+      "matched": 355,
+      "changed": 268
+    },
+    {
+      "name": "sounds_mon_act8.npk",
+      "original_sha256": "236933c50bba0f83a004da06f29c8ddca06a4c4947ab1d17a48f50218bf4a06c",
+      "patched_sha256": "ea04186000d005f5c6d9f9a29fc8261a235fcd46d3086a527461813ed2f9a0e2",
+      "original_size": 2047687,
+      "patched_size": 2184941,
+      "entries": 122,
+      "matched": 120,
+      "changed": 86
+    },
+    {
+      "name": "sounds_mon_act9.npk",
+      "original_sha256": "fcfb6eda7a7266ef9569001dca71d25260e4d303d1dfc6fb2afac3055d43cc4d",
+      "patched_sha256": "056b2a27a25857fddf08d743d9e1d959cbfaf119883f64eb19dc6719f0614d02",
+      "original_size": 5017396,
+      "patched_size": 5409888,
+      "entries": 262,
+      "matched": 262,
+      "changed": 96
+    },
+    {
+      "name": "sounds_mon_actx.npk",
+      "original_sha256": "258accf0d94cfc825cb8756989db4ce32a794391bd1f520b289e5e1d8846b50c",
+      "patched_sha256": "3a6340cc986e9248ca11186fd963cde06cf94f58cb8046db44906ca8044164db",
+      "original_size": 14741609,
+      "patched_size": 15271596,
+      "entries": 807,
+      "matched": 735,
+      "changed": 435
+    },
+    {
+      "name": "sounds_mon_actx_1.npk",
+      "original_sha256": "f34ff472b5af62bf66a7156d56cab199b1ee43507edb7f3e8b6565cf53583b06",
+      "patched_sha256": "df175f8c2d9a016ed25f6e207a11e782a3f6ec1021c6959ef151cafac86b6a71",
+      "original_size": 6994690,
+      "patched_size": 7635593,
+      "entries": 378,
+      "matched": 378,
+      "changed": 171
+    },
+    {
+      "name": "sounds_mon_anton.npk",
+      "original_sha256": "f0ba1a3cb55934d21d7bf74d6db52a40d245e75cf5d7269da5c9f4d3fe6a7800",
+      "patched_sha256": "0a509a9928745d9360d4981852097413a93ff5046a511a978f7f3c214fc78ec9",
+      "original_size": 12469521,
+      "patched_size": 12838236,
+      "entries": 609,
+      "matched": 609,
+      "changed": 187
+    },
+    {
+      "name": "sounds_mon_archipelago_vo.npk",
+      "original_sha256": "2184cf216c55cfe1f579f86e4efe2d598af0e999fc4b6636caf079f640fbf29d",
+      "patched_sha256": "80115597c45e754ee44ecbf807dd271e4c727bfa1a576a38cf8743a3dd94b012",
+      "original_size": 29584201,
+      "patched_size": 28852620,
+      "entries": 1054,
+      "matched": 1054,
+      "changed": 754
+    },
+    {
+      "name": "sounds_mon_asrahan_vo.npk",
+      "original_sha256": "e0d169a31b4c3ca22bac608f87ef944c12735678cffdb7e2acd6ae9ae809c715",
+      "patched_sha256": "8efe6a3e68c1552813cb99d6b76eab5bed8abdd61a2014b467d06100da7afcfd",
+      "original_size": 40714393,
+      "patched_size": 41929683,
+      "entries": 1422,
+      "matched": 1422,
+      "changed": 1171
+    },
+    {
+      "name": "sounds_mon_awaken_forest_vo.npk",
+      "original_sha256": "739a82e06ead41c52b83a55053f5705f3593bd5d08722ec5ecce14b277cca27c",
+      "patched_sha256": "752af67e6d1a536824bfa0375201b2a647d813fa0044b6bf5c563cd0c45fb584",
+      "original_size": 13595323,
+      "patched_size": 13485525,
+      "entries": 448,
+      "matched": 448,
+      "changed": 421
+    },
+    {
+      "name": "sounds_mon_azure_main_vo.npk",
+      "original_sha256": "7824354cf783180908fb32dc2192462864f1a92e822fdef1cb9a8e7558ed9eb5",
+      "patched_sha256": "94e0e4707e267fa7da7483479fd490475c36cc2fdba1640b70e90b2a51226910",
+      "original_size": 12214413,
+      "patched_size": 12017998,
+      "entries": 375,
+      "matched": 375,
+      "changed": 278
+    },
+    {
+      "name": "sounds_mon_bakal.npk",
+      "original_sha256": "5adfe70be5d1d44bf0059618282b77f453a92ba03f223b823ad81ff24f2469cd",
+      "patched_sha256": "09501fbf75c06b914664150502daee2d109d7fc5a736689173fd3e1f491f9175",
+      "original_size": 80590474,
+      "patched_size": 83724059,
+      "entries": 2070,
+      "matched": 2070,
+      "changed": 728
+    },
+    {
+      "name": "sounds_mon_blood.npk",
+      "original_sha256": "539540c34a7f0c03b1b0a8fa6983a37100f397689495440e1adbcc6c5c58b796",
+      "patched_sha256": "53d50b46f82aa449b001ac6371bb58f4dce3d259350a6f1c08bb9fdc8e6657d4",
+      "original_size": 8049104,
+      "patched_size": 8602892,
+      "entries": 322,
+      "matched": 286,
+      "changed": 168
+    },
+    {
+      "name": "sounds_mon_borderline_vo.npk",
+      "original_sha256": "23ad4008553835bc2a5a5b6cdd5c6bdbee083e20797956297e08a261848668ca",
+      "patched_sha256": "3013587c5eef2dae19cd5469d36aaf6510d52f4165c012f12685b352a42f0976",
+      "original_size": 6781011,
+      "patched_size": 6994303,
+      "entries": 396,
+      "matched": 396,
+      "changed": 163
+    },
+    {
+      "name": "sounds_mon_castle.npk",
+      "original_sha256": "d8c79a2a88862db0ee18183803eb83330358fe7cde1fa53dfc435d9f6e5514b4",
+      "patched_sha256": "7d67cfd9e591c939113d98ac3b7c758bf60b1d96a28daf702260633f98d51469",
+      "original_size": 7161584,
+      "patched_size": 8865597,
+      "entries": 323,
+      "matched": 323,
+      "changed": 88
+    },
+    {
+      "name": "sounds_mon_colosseum.npk",
+      "original_sha256": "8ecf546694e617843bfe08554dd99f93ed7648194017182730be132aee80a249",
+      "patched_sha256": "46278e363e18fe034a371abbb2dac437e9af1ef7b694dd9796c1994d72b2b664",
+      "original_size": 9869158,
+      "patched_size": 10664334,
+      "entries": 327,
+      "matched": 326,
+      "changed": 145
+    },
+    {
+      "name": "sounds_mon_combat.npk",
+      "original_sha256": "96b8344b3015711003cb5c8894ad59041bbf8df2fd9b99da18ca3b1c22450165",
+      "patched_sha256": "e80d73d1254f5d1f3291c8995c0ac1b2ad4bbc94b625773009dfef96b8bfdca7",
+      "original_size": 2425106,
+      "patched_size": 2580898,
+      "entries": 127,
+      "matched": 127,
+      "changed": 116
+    },
+    {
+      "name": "sounds_mon_dark_purgatory.npk",
+      "original_sha256": "1f0b69c942d1ff1438ef4ac4a9786af76a4d5572d1344f40736026975e658f55",
+      "patched_sha256": "df96af0b4b9e1a470160f672a0a688ca55dcf1e95f79d817bfc2c406584583e7",
+      "original_size": 23760243,
+      "patched_size": 24542809,
+      "entries": 678,
+      "matched": 678,
+      "changed": 260
+    },
+    {
+      "name": "sounds_mon_dark_temple.npk",
+      "original_sha256": "d2b021ede4352f01e0bc5f80eb1b02388a96f32aef65cd5b57fde5b360300dcd",
+      "patched_sha256": "9cf5c1c52234e95df0ca99ac0116336b427e6dd9e7bcee80c27a13cdfc54c9df",
+      "original_size": 17837289,
+      "patched_size": 16644012,
+      "entries": 594,
+      "matched": 594,
+      "changed": 299
+    },
+    {
+      "name": "sounds_mon_destroyed_castle.npk",
+      "original_sha256": "379536ac520128c44a8093c8444633e497bb242d4f9437604db3e764a79cf33e",
+      "patched_sha256": "7418a2b421c8bb550cc4ce8f7ddcf4cd07e3f6778abef4027c43cd1889925de9",
+      "original_size": 22102306,
+      "patched_size": 22778714,
+      "entries": 736,
+      "matched": 736,
+      "changed": 181
+    },
+    {
+      "name": "sounds_mon_dimension_cloister.npk",
+      "original_sha256": "ae339e744cc69d135f6c27e106566f320db3a751036aa3834c30f2d18aebdde1",
+      "patched_sha256": "0aa770c05d2622728b4465cf243d0d4f59ab5db9151b52ee566b5f8d9a56319e",
+      "original_size": 51048841,
+      "patched_size": 51635738,
+      "entries": 1838,
+      "matched": 1838,
+      "changed": 942
+    },
+    {
+      "name": "sounds_mon_diregie.npk",
+      "original_sha256": "a4faa7af4418174c3b88417c623395d517994066e81548d4406caf1736b81431",
+      "patched_sha256": "035855cf985f04ffeed271ec413893d99439fa03df2a69c2359e4761edf1d598",
+      "original_size": 68048876,
+      "patched_size": 68085793,
+      "entries": 2294,
+      "matched": 2294,
+      "changed": 4
+    },
+    {
+      "name": "sounds_mon_diregie_vo.npk",
+      "original_sha256": "0adc4e70cb5ddc7bc9e4dea125d08b9df6702127506ec717e3457aa06d16831a",
+      "patched_sha256": "c6fb05376ea3d870e7e1bd1f85b5b876ed73c6476e743844a7c177503a8486ce",
+      "original_size": 74981285,
+      "patched_size": 73799447,
+      "entries": 2022,
+      "matched": 2022,
+      "changed": 1717
+    },
+    {
+      "name": "sounds_mon_duskyisland_vo.npk",
+      "original_sha256": "0a3816b51cb9359e60fd760944bdd8629d2935d8ebb6ef0bc1a26f70513f01ec",
+      "patched_sha256": "04b03d6f8d8fdbd953e81afd85261a248d90341aaf53d9b61e32b0f1215d8136",
+      "original_size": 15146053,
+      "patched_size": 15522958,
+      "entries": 525,
+      "matched": 525,
+      "changed": 513
+    },
+    {
+      "name": "sounds_mon_eternal_flame.npk",
+      "original_sha256": "4251baeff26b4db452e9ec0791e14491cba8d01690591cb509607437532e4fc8",
+      "patched_sha256": "e983341cef31b0276429b12081326f0ebb0a129f90f124f067ef29d243a03109",
+      "original_size": 7662333,
+      "patched_size": 7992359,
+      "entries": 383,
+      "matched": 383,
+      "changed": 73
+    },
+    {
+      "name": "sounds_mon_event.npk",
+      "original_sha256": "d50a7b292caee70bb33764d9897c1c8f55eec6799609733b2d775e9fec579130",
+      "patched_sha256": "06fe810417d38978ac23ab69c2f3dd92e8197df10adabfcb93ca586a9a7c5625",
+      "original_size": 66002934,
+      "patched_size": 65850285,
+      "entries": 2980,
+      "matched": 1844,
+      "changed": 257
+    },
+    {
+      "name": "sounds_mon_evildom_gathering.npk",
+      "original_sha256": "1eba5f39ccbc8c105b5971818bb5c8749ffe883740e5ec50e6edc9a38823d2ab",
+      "patched_sha256": "4f75288dbef33829f42ada09474ad8f494741200d2b8c0cc33dece4ab813a8d2",
+      "original_size": 7921120,
+      "patched_size": 8466493,
+      "entries": 343,
+      "matched": 343,
+      "changed": 154
+    },
+    {
+      "name": "sounds_mon_evildom_war.npk",
+      "original_sha256": "57909f7461d7b541ed8faef5fd4546e65c794115099e587440ffa79cff61ef71",
+      "patched_sha256": "34d6a5e046e12693502d93986b02edcdf10f9b54c394a6f6831cbee205af381b",
+      "original_size": 35050194,
+      "patched_size": 34077229,
+      "entries": 985,
+      "matched": 985,
+      "changed": 391
+    },
+    {
+      "name": "sounds_mon_f_gknight.npk",
+      "original_sha256": "6b10158a31032c99ff43b0f66bf6d4011236a61a94e0000a6bcfd7cf4458cb53",
+      "patched_sha256": "862a44c4670895015ea00a9aa5b45f028cdbd8525bdbeb26d432b93c798d639f",
+      "original_size": 3188552,
+      "patched_size": 3366723,
+      "entries": 166,
+      "matched": 166,
+      "changed": 126
+    },
+    {
+      "name": "sounds_mon_fiendwar.npk",
+      "original_sha256": "570fbee313d502ffc3f5ad77dc30983f818656d7de999f1398611aa3303f4b8b",
+      "patched_sha256": "af75d4dd5a67dc3ed6a5654297fe8200df2f7f8110ac91d2843e37861ad8a806",
+      "original_size": 10909761,
+      "patched_size": 11039979,
+      "entries": 396,
+      "matched": 395,
+      "changed": 91
+    },
+    {
+      "name": "sounds_mon_gaebolg.npk",
+      "original_sha256": "bae43e7bb77b1fe808cde87bf406f351b47c9e516b173535d85e751fe05a3566",
+      "patched_sha256": "e9a142c7f02bc5f529a85219d0bc0bc782bf7fe2fbc7ff9f22a23a5984e3d550",
+      "original_size": 33551539,
+      "patched_size": 34038306,
+      "entries": 1105,
+      "matched": 1105,
+      "changed": 328
+    },
+    {
+      "name": "sounds_mon_harlem.npk",
+      "original_sha256": "81607d33d3199d9cf89f303d13043d11018c7b7abb374862763581f0a56808d0",
+      "patched_sha256": "963d845d18cfc43638f9faed6eb83d77063c1a827ad36968eed93070a01de5ec",
+      "original_size": 30660009,
+      "patched_size": 32688467,
+      "entries": 1214,
+      "matched": 1214,
+      "changed": 646
+    },
+    {
+      "name": "sounds_mon_hellmon.npk",
+      "original_sha256": "eafba5bb65335454d2fc559440b6df6180bc2b177cb075f144c45bb217ad8cd9",
+      "patched_sha256": "06a84e2af1d91e17a4e62f6f575328fa63b098b68ae445482e5d99215e1552bd",
+      "original_size": 6082489,
+      "patched_size": 6086489,
+      "entries": 283,
+      "matched": 237,
+      "changed": 61
+    },
+    {
+      "name": "sounds_mon_impossible.npk",
+      "original_sha256": "276980cddb8ac21b1053066f87cc601b90844aafede6b8d1690140847929298b",
+      "patched_sha256": "b087997c29627a024dcbc44e18affb6747219e83118d989066f517ea759faa0f",
+      "original_size": 8787315,
+      "patched_size": 9624081,
+      "entries": 461,
+      "matched": 461,
+      "changed": 286
+    },
+    {
+      "name": "sounds_mon_inaeduskwar_vo.npk",
+      "original_sha256": "17e92861fe8082c46b84334d7db4269bad6042134e16afd4cc60a7a0f6da7e12",
+      "patched_sha256": "f5a23b8e796d20315466d56c8d546f9021f4c6e3639df262098d526f3e47918c",
+      "original_size": 32668013,
+      "patched_size": 32824699,
+      "entries": 893,
+      "matched": 893,
+      "changed": 785
+    },
+    {
+      "name": "sounds_mon_infiniteinflorescence_vo.npk",
+      "original_sha256": "69898c276d321d7d0b7ba52611c93f614b561723d0df33bbc5cc034573c5cb58",
+      "patched_sha256": "9450f55d74149b26c8f752f3760f8846d329d5b19a07331ff90566ba299d2ad7",
+      "original_size": 5758246,
+      "patched_size": 5533787,
+      "entries": 227,
+      "matched": 227,
+      "changed": 203
+    },
+    {
+      "name": "sounds_mon_ispins.npk",
+      "original_sha256": "f8811fcbd7ecbeb50ace82b2b2f817d6f2decebf14748da719fd48b972b50733",
+      "patched_sha256": "7278a28c0a3789a3bf416ff67e877f3f9669ed9680ac469239c6c360a99808c3",
+      "original_size": 44272718,
+      "patched_size": 45778354,
+      "entries": 1370,
+      "matched": 1370,
+      "changed": 702
+    },
+    {
+      "name": "sounds_mon_legend.npk",
+      "original_sha256": "8410df3d29f4eb07d6349929261f43dec393b235092943e1d08c8cab3a1f2d51",
+      "patched_sha256": "291fb4fdc475ddeb1b09a73a514e0982cc532282e5334093328fb49bebdd5388",
+      "original_size": 14743905,
+      "patched_size": 15901884,
+      "entries": 573,
+      "matched": 573,
+      "changed": 235
+    },
+    {
+      "name": "sounds_mon_luke.npk",
+      "original_sha256": "53b27fc9db5b70b2b8868507c9ff7360bbe07d57951b73dc91367d79684a10fa",
+      "patched_sha256": "bd968a632ab976330e77977c507d3f0ad77f4a1419eca5befe2ba834f19a6ca2",
+      "original_size": 11868593,
+      "patched_size": 12175796,
+      "entries": 443,
+      "matched": 443,
+      "changed": 257
+    },
+    {
+      "name": "sounds_mon_meister_laboratory.npk",
+      "original_sha256": "28567e02a709eced0de24ac21b101b0824933f0dbd0b54b186acfb0b4f85157f",
+      "patched_sha256": "611e849acc29d51ddb8836d49da696713f41e394226259e2d17df14e7a06c919",
+      "original_size": 12324889,
+      "patched_size": 12822799,
+      "entries": 477,
+      "matched": 476,
+      "changed": 108
+    },
+    {
+      "name": "sounds_mon_metrocenter.npk",
+      "original_sha256": "f972851eea73d32e796066281bd8b9c06220019f0b85876307821063497fadd4",
+      "patched_sha256": "6f7347563bdb384930e16277d6d861bbaa34fac9cd1b0f5385430c5ea9a2ffd4",
+      "original_size": 11363674,
+      "patched_size": 11492559,
+      "entries": 619,
+      "matched": 617,
+      "changed": 250
+    },
+    {
+      "name": "sounds_mon_moon_lake_vo.npk",
+      "original_sha256": "38811afe231c1aa5cd7d42872fabd5f875524c527776e487e0b3f3b0775f1969",
+      "patched_sha256": "4ce807918f7d1eb602429eb49284ec5d83d34046e9afaf777873204d635be05c",
+      "original_size": 16730767,
+      "patched_size": 15811117,
+      "entries": 642,
+      "matched": 642,
+      "changed": 521
+    },
+    {
+      "name": "sounds_mon_mountain.npk",
+      "original_sha256": "44f3505ceb943ce3054f0566d0881cd0d8d44b206bba6e333db0c5fbbb0bdf09",
+      "patched_sha256": "7ea11866b10f69d1d44da70d7a15cc1c6320e8171c6f21dafd23d5cd6d9dd0dc",
+      "original_size": 17072559,
+      "patched_size": 20307430,
+      "entries": 523,
+      "matched": 523,
+      "changed": 196
+    },
+    {
+      "name": "sounds_mon_nabel_vo.npk",
+      "original_sha256": "907f7a9578a81313a4ecea0173eb6d9a87aea64fed644453dd4dd30c7d2027d4",
+      "patched_sha256": "3bb921cc0360599b7868da7f90a3dafddf45cdd6e6ce83744e698a91bf77f54f",
+      "original_size": 35605913,
+      "patched_size": 33434695,
+      "entries": 739,
+      "matched": 739,
+      "changed": 739
+    },
+    {
+      "name": "sounds_mon_new_act1.npk",
+      "original_sha256": "c9272b021749e4ab2ef7ea188eb806c5ca61928ce51e6e742265536f7c000e89",
+      "patched_sha256": "88b4c26bbd9c5b97854f9845c5b59820c20739bec7f6a37ee63c0fe3ffd7c88c",
+      "original_size": 3045464,
+      "patched_size": 3189745,
+      "entries": 165,
+      "matched": 165,
+      "changed": 73
+    },
+    {
+      "name": "sounds_mon_new_act2.npk",
+      "original_sha256": "15450c0355246d66d2d738a90fe97ceaed5619b0cf04540792b2ab224a3c7327",
+      "patched_sha256": "7aa69d4603f4abc827a272736dd4e329adc3ace32f497a4c088207e85b77b18c",
+      "original_size": 842165,
+      "patched_size": 794037,
+      "entries": 32,
+      "matched": 32,
+      "changed": 16
+    },
+    {
+      "name": "sounds_mon_new_act3.npk",
+      "original_sha256": "4ad60d7590d2079ba70442bcb2562554b4c9a3cc7f27cf2895dbcf5f21b49651",
+      "patched_sha256": "0aa049c357a2413043350677eaa25471cbcbdc5d5e71293d1c8dddc417a4ab18",
+      "original_size": 11690496,
+      "patched_size": 11981370,
+      "entries": 534,
+      "matched": 494,
+      "changed": 196
+    },
+    {
+      "name": "sounds_mon_new_act4.npk",
+      "original_sha256": "3706133d604a99b278580526ebd3589c50fa6f40f64c0f763ec8b3e93c29292f",
+      "patched_sha256": "6f6ec935c44c7fc2299c17a6c76d97fbf929d982c2812155675bf08e103f7553",
+      "original_size": 5484890,
+      "patched_size": 5684013,
+      "entries": 320,
+      "matched": 320,
+      "changed": 64
+    },
+    {
+      "name": "sounds_mon_new_act5.npk",
+      "original_sha256": "81210604691bbc19fc1560e25da95e0a164e25cc8ce957720049232346521cc6",
+      "patched_sha256": "55f52f5ff1974c066c16de8af7c791759ea97da355ada3c4b2d2ab61a5ad1739",
+      "original_size": 3324546,
+      "patched_size": 3450137,
+      "entries": 147,
+      "matched": 147,
+      "changed": 50
+    },
+    {
+      "name": "sounds_mon_noblesse_code.npk",
+      "original_sha256": "fc751a1fe17c528fcdcb4b9873eb6014d8870e3a85cc05232f09f335c1f0401b",
+      "patched_sha256": "e2abe429bdf5da71699ce8347f0b16791a6225e826f29430dd8c9bb3f06f0acb",
+      "original_size": 22095705,
+      "patched_size": 22686117,
+      "entries": 858,
+      "matched": 858,
+      "changed": 215
+    },
+    {
+      "name": "sounds_mon_oculus.npk",
+      "original_sha256": "d70732278765cd7ae6a1616edcd8a87d7473a627db151e3221396ed8dc1d31c8",
+      "patched_sha256": "70a017f280f40371d5323b0127380dbf103798b7a32415c690c6d450d6be490d",
+      "original_size": 24600293,
+      "patched_size": 22809437,
+      "entries": 658,
+      "matched": 658,
+      "changed": 288
+    },
+    {
+      "name": "sounds_mon_ozma.npk",
+      "original_sha256": "b27c22143c1f3b22c7e680344b53859b1164f189e3f79f6080bd2643494aef9e",
+      "patched_sha256": "b1209a94669ed9ffb266a9cab2cbd0b68bd39df57c8b224d2fe54149cef942d0",
+      "original_size": 61732676,
+      "patched_size": 57924352,
+      "entries": 1335,
+      "matched": 1335,
+      "changed": 480
+    },
+    {
+      "name": "sounds_mon_prey.npk",
+      "original_sha256": "d3636e09f4182389f14d81adc3d352102fdd7a56b0c465d8cf90f263230587bd",
+      "patched_sha256": "8e172431d7b2f79eb989eda0d6e4e6910af6000dc7e6c8f0cec7d5a7e91d83ab",
+      "original_size": 18029951,
+      "patched_size": 17509857,
+      "entries": 604,
+      "matched": 604,
+      "changed": 191
+    },
+    {
+      "name": "sounds_mon_sanctus_bellum.npk",
+      "original_sha256": "21463b3b84879913361e98cc6a82cd3aa68567f319d740223195c41412a76cc8",
+      "patched_sha256": "f19477e68417c4650ba303edbceb25233c1cb762eca484e387800dd485e44a10",
+      "original_size": 21395979,
+      "patched_size": 22895288,
+      "entries": 796,
+      "matched": 796,
+      "changed": 297
+    },
+    {
+      "name": "sounds_mon_sirocco.npk",
+      "original_sha256": "774fb1386d401c9c4b1ed61d689d2e90b013a1dad134a2220eb985c0fca1851a",
+      "patched_sha256": "a7bdc7b968c262f84c0a27380a72d763b53e5544937c4a71fccf7b6365ae45df",
+      "original_size": 50055044,
+      "patched_size": 49788382,
+      "entries": 1806,
+      "matched": 1806,
+      "changed": 652
+    },
+    {
+      "name": "sounds_mon_solidaris_vo.npk",
+      "original_sha256": "891d6580a26d7efb8972adc4cbdddd02828d4a09b877a79aadff9fbde2c24006",
+      "patched_sha256": "40d57d96b6b8ab979fc6bca7c41208270d4ad60b20601f15d4cbab1cc8665c4e",
+      "original_size": 5765206,
+      "patched_size": 6041066,
+      "entries": 373,
+      "matched": 373,
+      "changed": 202
+    },
+    {
+      "name": "sounds_mon_special.npk",
+      "original_sha256": "aae81e4427cf6a90283e6ca96e28c86324d74311b314a938dcf60a73080e7208",
+      "patched_sha256": "0519891d0dff381a0b535d6005ed7de71cbd24b1f593b83c0154cd92e736cfdf",
+      "original_size": 8717317,
+      "patched_size": 8774038,
+      "entries": 337,
+      "matched": 292,
+      "changed": 95
+    },
+    {
+      "name": "sounds_mon_storm_lane.npk",
+      "original_sha256": "54416f6e0ce4d08658aa2e0f444b0387be32f73d6d3a48dd633d7b5f954ee3a0",
+      "patched_sha256": "2cd37cf493659c2a4fcade53d6423903bf21c3e2787d316881f0ca24b2f4dac7",
+      "original_size": 38048022,
+      "patched_size": 37532270,
+      "entries": 1504,
+      "matched": 1504,
+      "changed": 347
+    },
+    {
+      "name": "sounds_mon_time.npk",
+      "original_sha256": "bbcea29ae0041511feeffaef2b38833c207a29879ac00dc7f5349faa234a4864",
+      "patched_sha256": "e04470802226da7c1cd6a74d1a65ca7e2dadfb795da3c5a2c15eef3dd5d42730",
+      "original_size": 12838655,
+      "patched_size": 13998216,
+      "entries": 559,
+      "matched": 559,
+      "changed": 238
+    },
+    {
+      "name": "sounds_mon_venus_vo.npk",
+      "original_sha256": "a11e1b11310af4a27295d6dd7e2e1f5bba0adaf51ff2ef6f0f104e772c26c52d",
+      "patched_sha256": "7640552499a427c5a82c472299780d1a271d1cd4d47e1844aa216721c4317973",
+      "original_size": 19635252,
+      "patched_size": 19558056,
+      "entries": 593,
+      "matched": 593,
+      "changed": 584
+    },
+    {
+      "name": "sounds_mon_white_cloud_valley_vo.npk",
+      "original_sha256": "585fe1e949a9be2ccfb39f2b07f814b06fedc54953c9286fda32755a7f351f47",
+      "patched_sha256": "02a8e9b1cedbecf124cc6c6d395ba92bc3bc3ff4599efa579e3438c0872a0c4c",
+      "original_size": 4867335,
+      "patched_size": 4853746,
+      "entries": 334,
+      "matched": 334,
+      "changed": 136
+    },
+    {
+      "name": "sounds_npc.npk",
+      "original_sha256": "304654d457c0432d4e3e90e8918a9238f096ca2c0860a873190aac60440b19ff",
+      "patched_sha256": "95d5a1d0b8cb4de3cb39c178726e515cbd7fe1a9813212a2f4dc18ec22bb8279",
+      "original_size": 117956588,
+      "patched_size": 127043081,
+      "entries": 3079,
+      "matched": 2715,
+      "changed": 2631
+    },
+    {
+      "name": "sounds_npc_npc_dnl.npk",
+      "original_sha256": "f56b1a41ca314b11b7aa53613a97fa2837e20a798409cd3f300859059e02daaf",
+      "patched_sha256": "e2f4cb339406ca3b6b58fb89bc4f5713bf560bd193620da03784390220b797be",
+      "original_size": 9267985,
+      "patched_size": 9673798,
+      "entries": 408,
+      "matched": 408,
+      "changed": 408
+    },
+    {
+      "name": "sounds_ui.npk",
+      "original_sha256": "e42c12ea440e28895bf632d9f5e0c194f851ea48a23b10f2e8200ae478772132",
+      "patched_sha256": "2481faed9e08bf84fceaaba16aaabd49bdb49802cfc50a7cea8861ad64731889",
+      "original_size": 105230396,
+      "patched_size": 105232669,
+      "entries": 2847,
+      "matched": 2,
+      "changed": 1
+    }
+  ],
+  "baseline_pack_names": [
+    "sounds_amb.npk",
+    "sounds_char_apc.npk",
+    "sounds_char_archer.npk",
+    "sounds_char_archer_effect.npk",
+    "sounds_char_archer_weapon.npk",
+    "sounds_char_creator.npk",
+    "sounds_char_creator_effect.npk",
+    "sounds_char_darkknight.npk",
+    "sounds_char_darkknight_effect.npk",
+    "sounds_char_demonic_lancer.npk",
+    "sounds_char_demonic_lancer_effect.npk",
+    "sounds_char_demonic_lancer_weapon.npk",
+    "sounds_char_fighter.npk",
+    "sounds_char_fighter_effect.npk",
+    "sounds_char_fighter_m.npk",
+    "sounds_char_fighter_m_effect.npk",
+    "sounds_char_fighter_weapon.npk",
+    "sounds_char_gunblader.npk",
+    "sounds_char_gunblader_effect.npk",
+    "sounds_char_gunblader_weapon.npk",
+    "sounds_char_gunner.npk",
+    "sounds_char_gunner_effect.npk",
+    "sounds_char_gunner_f.npk",
+    "sounds_char_gunner_f_effect.npk",
+    "sounds_char_gunner_f_weapon.npk",
+    "sounds_char_gunner_weapon.npk",
+    "sounds_char_knight.npk",
+    "sounds_char_knight_effect.npk",
+    "sounds_char_knight_weapon.npk",
+    "sounds_char_priest.npk",
+    "sounds_char_priest_effect.npk",
+    "sounds_char_priest_f.npk",
+    "sounds_char_priest_f_effect.npk",
+    "sounds_char_priest_f_weapon.npk",
+    "sounds_char_priest_weapon.npk",
+    "sounds_char_sd_miniwar_effect.npk",
+    "sounds_char_swordman.npk",
+    "sounds_char_swordman_effect.npk",
+    "sounds_char_swordman_f.npk",
+    "sounds_char_swordman_f_effect.npk",
+    "sounds_char_swordman_f_weapon.npk",
+    "sounds_char_swordman_weapon.npk",
+    "sounds_char_thief.npk",
+    "sounds_char_thief_effect.npk",
+    "sounds_char_thief_weapon.npk",
+    "sounds_char_weapon.npk",
+    "sounds_char_wizard.npk",
+    "sounds_char_wizard_effect.npk",
+    "sounds_char_wizard_m.npk",
+    "sounds_char_wizard_m_effect.npk",
+    "sounds_char_wizard_weapon.npk",
+    "sounds_creature_common.npk",
+    "sounds_creature_effect.npk",
+    "sounds_dialog.npk",
+    "sounds_effect.npk",
+    "sounds_effect_amb.npk",
+    "sounds_effect_arcade.npk",
+    "sounds_effect_arcade_vo.npk",
+    "sounds_effect_avatar_fate.npk",
+    "sounds_effect_duel_match.npk",
+    "sounds_effect_magic.npk",
+    "sounds_effect_object.npk",
+    "sounds_effect_weapon_avatar.npk",
+    "sounds_effect_weapon_object.npk",
+    "sounds_equip_acc.npk",
+    "sounds_equip_armor.npk",
+    "sounds_equip_impossible.npk",
+    "sounds_equip_title.npk",
+    "sounds_hookup.npk",
+    "sounds_mon_act1.npk",
+    "sounds_mon_act2.npk",
+    "sounds_mon_act3.npk",
+    "sounds_mon_act4.npk",
+    "sounds_mon_act5.npk",
+    "sounds_mon_act6.npk",
+    "sounds_mon_act7.npk",
+    "sounds_mon_act8.npk",
+    "sounds_mon_act9.npk",
+    "sounds_mon_actx.npk",
+    "sounds_mon_actx_1.npk",
+    "sounds_mon_anton.npk",
+    "sounds_mon_apocalypse.npk",
+    "sounds_mon_apocalypse_vo.npk",
+    "sounds_mon_archipelago.npk",
+    "sounds_mon_archipelago_vo.npk",
+    "sounds_mon_asrahan.npk",
+    "sounds_mon_asrahan_vo.npk",
+    "sounds_mon_awaken_forest.npk",
+    "sounds_mon_awaken_forest_vo.npk",
+    "sounds_mon_azure_main.npk",
+    "sounds_mon_azure_main_vo.npk",
+    "sounds_mon_bakal.npk",
+    "sounds_mon_blood.npk",
+    "sounds_mon_borderline.npk",
+    "sounds_mon_borderline_vo.npk",
+    "sounds_mon_castle.npk",
+    "sounds_mon_castle_apostate.npk",
+    "sounds_mon_castle_apostate_vo.npk",
+    "sounds_mon_colosseum.npk",
+    "sounds_mon_combat.npk",
+    "sounds_mon_common_bodyhit.npk",
+    "sounds_mon_common_explosion.npk",
+    "sounds_mon_common_foley.npk",
+    "sounds_mon_common_magic.npk",
+    "sounds_mon_common_weapon.npk",
+    "sounds_mon_dark_purgatory.npk",
+    "sounds_mon_dark_temple.npk",
+    "sounds_mon_destroyed_castle.npk",
+    "sounds_mon_dimension_cloister.npk",
+    "sounds_mon_diregie.npk",
+    "sounds_mon_diregie_vo.npk",
+    "sounds_mon_dragon.npk",
+    "sounds_mon_duskyisland.npk",
+    "sounds_mon_duskyisland_vo.npk",
+    "sounds_mon_eternal_flame.npk",
+    "sounds_mon_event.npk",
+    "sounds_mon_evildom_gathering.npk",
+    "sounds_mon_evildom_war.npk",
+    "sounds_mon_fiendwar.npk",
+    "sounds_mon_f_gknight.npk",
+    "sounds_mon_gaebolg.npk",
+    "sounds_mon_harlem.npk",
+    "sounds_mon_hellmon.npk",
+    "sounds_mon_impossible.npk",
+    "sounds_mon_inaeduskwar.npk",
+    "sounds_mon_inaeduskwar_vo.npk",
+    "sounds_mon_infiniteinflorescence.npk",
+    "sounds_mon_infiniteinflorescence_vo.npk",
+    "sounds_mon_ispins.npk",
+    "sounds_mon_labyrinth_paradox.npk",
+    "sounds_mon_labyrinth_paradox_vo.npk",
+    "sounds_mon_legend.npk",
+    "sounds_mon_luke.npk",
+    "sounds_mon_meister_laboratory.npk",
+    "sounds_mon_metrocenter.npk",
+    "sounds_mon_moon_lake.npk",
+    "sounds_mon_moon_lake_vo.npk",
+    "sounds_mon_mountain.npk",
+    "sounds_mon_nabel.npk",
+    "sounds_mon_nabel_vo.npk",
+    "sounds_mon_new_act1.npk",
+    "sounds_mon_new_act2.npk",
+    "sounds_mon_new_act3.npk",
+    "sounds_mon_new_act4.npk",
+    "sounds_mon_new_act5.npk",
+    "sounds_mon_noblesse_code.npk",
+    "sounds_mon_oculus.npk",
+    "sounds_mon_ozma.npk",
+    "sounds_mon_prey.npk",
+    "sounds_mon_quest.npk",
+    "sounds_mon_sanctus_bellum.npk",
+    "sounds_mon_seon.npk",
+    "sounds_mon_sirocco.npk",
+    "sounds_mon_solidaris.npk",
+    "sounds_mon_solidaris_vo.npk",
+    "sounds_mon_special.npk",
+    "sounds_mon_storm_lane.npk",
+    "sounds_mon_time.npk",
+    "sounds_mon_turtle_library.npk",
+    "sounds_mon_turtle_library_vo.npk",
+    "sounds_mon_venus.npk",
+    "sounds_mon_venus_vo.npk",
+    "sounds_mon_weapon.npk",
+    "sounds_mon_white_cloud_valley.npk",
+    "sounds_mon_white_cloud_valley_vo.npk",
+    "sounds_npc.npk",
+    "sounds_npc_npc_dnl.npk",
+    "sounds_pet.npk",
+    "sounds_stak.npk",
+    "sounds_stak_material.npk",
+    "sounds_stak_recipe.npk",
+    "sounds_stak_throw.npk",
+    "sounds_ui.npk"
+  ],
+  "verification": "Every entry reread; replaced bytes match source; unreplaced bytes match original; native index signatures verified.",
+  "excluded": [
+    "韩服语音补丁补充包-米歇尔攻坚战版本.zip：韩语补充，默认不混入日服补丁"
+  ],
+  "skipped_invalid_audio": [
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_call.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_dmg_01.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_dmg_02.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_normal.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_random.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_skill.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_skill_01.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_skill_02.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_cre_skill_03.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_creature_effect).npk",
+      "name": "sounds/creature/effect/jolin_title_call.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_mon_harlem).npk",
+      "name": "sounds/mon/harlem/eronze_dmg_01.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywy(sounds_mon_harlem).npk",
+      "name": "sounds/mon/harlem/eronze_dmg_03.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyG(sounds_effect_magic).npk",
+      "name": "sounds/effect/magic/ghost_bremen.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyG(sounds_effect_magic).npk",
+      "name": "sounds/effect/magic/ghost_circle.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyG(sounds_effect_magic).npk",
+      "name": "sounds/effect/magic/ghost_kajan.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyG(sounds_effect_magic).npk",
+      "name": "sounds/effect/magic/ghost_saya.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyG(sounds_effect_magic).npk",
+      "name": "sounds/char/swordman/effect/ghost_lhasa.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyR(sounds_char_knight.npk",
+      "name": "sounds/char/knight/kn_obstruction_01.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyRG(sounds_char_swordman_effect).npk",
+      "name": "sounds/char/swordman/effect/keiga_shield_loop.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyRG(sounds_effect_magic).npk",
+      "name": "sounds/effect/magic/ghost_circle.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyRG(sounds_effect_magic).npk",
+      "name": "sounds/effect/magic/ghost_kajan.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyRG(sounds_effect_magic).npk",
+      "name": "sounds/effect/magic/ghost_saya.ogg",
+      "size": 4
+    },
+    {
+      "pack": "rywyRG(sounds_effect_magic).npk",
+      "name": "sounds/char/swordman/effect/ghost_lhasa.ogg",
+      "size": 4
+    },
+    {
+      "pack": "sounds_npc(屏蔽大祭司).npk",
+      "name": "sounds/npc/high_priest_amb.ogg",
+      "size": 4
+    },
+    {
+      "pack": "sounds_npc(屏蔽大祭司).npk",
+      "name": "sounds/npc/high_priest_fw.ogg",
+      "size": 4
+    },
+    {
+      "pack": "sounds_npc(屏蔽大祭司).npk",
+      "name": "sounds/npc/high_priest_tk.ogg",
+      "size": 4
+    }
+  ],
+  "merge_rule": "Latest Japanese zip wins; valid Ogg audio from perfect Japanese rar fills missing names; zero-filled mute stubs are excluded.",
+  "storage": {
+    "format": "native-npk-and-lossless-parts",
+    "reason": "Two NPKs exceed the hosting upload limit; concatenate verified parts to reproduce the exact original payload.",
+    "split_files": [
+      {
+        "name": "sounds_npc.npk",
+        "parts": [
+          {
+            "name": "sounds_npc.npk.part1",
+            "size": 67108864,
+            "sha256": "61a05af75e796ce85152de01990823e5e207962b179e31bb7db3573cc5e80a4c"
+          },
+          {
+            "name": "sounds_npc.npk.part2",
+            "size": 59934217,
+            "sha256": "eb0369710e699bc19a7691260ea4ddb611cce73451b2c30456dd1cfabd501318"
+          }
+        ]
+      },
+      {
+        "name": "sounds_ui.npk",
+        "parts": [
+          {
+            "name": "sounds_ui.npk.part1",
+            "size": 67108864,
+            "sha256": "9a125bc39ff7d7b4905750ae74fa96f43b8163ff1d53cd667204d6505dbe26b2"
+          },
+          {
+            "name": "sounds_ui.npk.part2",
+            "size": 38123805,
+            "sha256": "47d0f2482582675bd3a77fedab97d076a139101a9546f86fbe09e3e70383abb0"
+          }
+        ]
+      }
+    ]
+  }
+}

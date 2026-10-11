@@ -35,7 +35,7 @@ func (b Bag) EquipmentAwardSlots(slots [2]uint16, count uint32) ([]uint16, error
 		}
 	}
 	if uint32(len(available)) != count {
-		return nil, fmt.Errorf("equipment bag is full")
+		return nil, ErrEquipmentBagFull
 	}
 	return available, nil
 }

@@ -1090,6 +1090,7 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 			c.Items = items
 		}
 		lootService = &loot.Service{Catalog: c, DropCatalog: dropCatalog, Rules: r, BagRules: bag, Tables: tables, Equipment: gear}
+		lootService.BoostAutoOverflowMail = os.Getenv("DFO_BOOST_AUTO_OVERFLOW_MAIL") == "1"
 		itemService = &inventory.ItemService{Model: r.Model, Catalog: c, BagRules: bag, Equipment: gear, AvatarDisjoint: pvfCatalogs.AvatarDisjoint, EmblemCompound: pvfCatalogs.EmblemCompound, AvatarSockets: pvfCatalogs.AvatarSockets, EmblemInlay: pvfCatalogs.EmblemInlay, SymbolSockets: pvfCatalogs.SymbolSockets, Journal: journalRules, CreateCost: equipmentCreateCost, Transform: equipmentTransformSystem, Points: pointRules, Truth: pvfCatalogs.Truth}
 		if progressionService != nil {
 			progressionService.CompletionAwarder = &inventory.Awarder{Catalog: c, Rules: bag, Equipment: gear}

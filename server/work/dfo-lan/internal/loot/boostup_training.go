@@ -8,6 +8,8 @@ import (
 )
 
 type BoostStepReceipt struct {
+	MailItems  []inventory.MailItem `json:"-"`
+	MailIDs    []int64
 	Granted    []BoostAutoGrant
 	Shared     []uint32
 	Step       byte
