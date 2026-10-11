@@ -36,6 +36,10 @@ func (client *gameConnection) logUnhandledRaidRequest(request *clientRequest) {
 	name := ""
 	// Names/IDs verified against this client's native opcodes.tsv registry.
 	switch request.frame.ID {
+	case 12:
+		name = "CREATE_PARTY_IN_RAID"
+	case 13:
+		name = "LEAVE_PARTY_IN_RAID"
 	case 650:
 		name = "RAID_ENTRY_COST_INFO"
 	case 656:

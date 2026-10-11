@@ -38,6 +38,7 @@ import (
 )
 
 type gatewayRuntime struct {
+	nonBakalTeams raidTeamRegistry
 	// Wire team sequences are unique across connections in this runtime.
 	bakalTeamSequence     atomic.Uint32
 	onlineGM              *onlineGMRegistry
