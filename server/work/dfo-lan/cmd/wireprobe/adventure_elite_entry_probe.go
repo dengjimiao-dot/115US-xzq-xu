@@ -73,9 +73,9 @@ func (w *worldSession) eliteEntryProbeRequest(opcode uint16) error {
 	}
 	switch opcode {
 	case 39, 43, 45, 46, 69, 70, 71, 72, 117, 2015, 2062:
-		if opcode == 2015 && w.activeDungeon.Definition.ID != 100003126 {
-			return fmt.Errorf("精锐传送只允许当前 Elvenmere 会话")
-		}
+		// CMD2015 must reach the existing Elvenmere handler after the same
+		// frozen identity/load checks as room movement. That handler owns
+		// dungeon scope and the native teleport response (legacy behavior).
 		p := w.adventureElitePrepared
 		if p == nil || !w.ordinaryEliteSelectionVisible() || p.Owner != w.role.ID || p.Channel != w.channelType ||
 			p.Settings != w.adventureEliteSnapshot || p.Selected == ([3]int64{}) || w.role.WireID == 0 || w.role.WireID == 65535 ||

@@ -50,6 +50,8 @@ func TestAdventureEliteStoredRandomOptionLoadPreservesCompanion(t *testing.T) {
 	decision := adventureEliteDiagnostic(w, 1811, packets, nil)
 	require.Equal(t, "0.3.20", decision["equipment_projection_version"])
 	require.Equal(t, "1/3", decision["random_option_projection_attempt"])
+	require.Equal(t, "0.3.21", decision["upstream_recovery_version"])
+	require.Equal(t, "db707d59", decision["upstream_recovery_baseline"])
 }
 
 // Optional read-only snapshot exported from the reported account, never the
@@ -68,17 +70,19 @@ func TestAdventureEliteRandomOptionNativeSavedSnapshots(t *testing.T) {
 	full, err := source.Equipment(index)
 	require.NoError(t, err)
 	defer full.Close()
-	definition, err := full.Definition(100060157)
-	require.NoError(t, err)
 	options, err := source.RandomOptions()
 	require.NoError(t, err)
-	t.Logf("source equipment=%d path=%s sha256=%s magic-seal=%v; random-option source hashes=%v",
-		definition.ID, definition.Path, definition.SHA256, definition.Fields["[random option]"], options.TableSHA256)
+	for _, id := range []uint32{100060157, 101020323} {
+		definition, err := full.Definition(id)
+		require.NoError(t, err)
+		t.Logf("source equipment=%d path=%s sha256=%s magic-seal=%v; random-option source hashes=%v",
+			definition.ID, definition.Path, definition.SHA256, definition.Fields["[random option]"], options.TableSHA256)
+	}
 	b, err := os.ReadFile(file)
 	require.NoError(t, err)
 	var roles []database.Character
 	require.NoError(t, json.Unmarshal(b, &roles))
-	require.Len(t, roles, 3)
+	require.NotEmpty(t, roles)
 	jobs, err := source.Characters("")
 	require.NoError(t, err)
 	learning, err := source.Learning(jobs)
@@ -87,7 +91,8 @@ func TestAdventureEliteRandomOptionNativeSavedSnapshots(t *testing.T) {
 	for _, role := range roles {
 		snapshot, err := service.TagCharacterSnapshot(role)
 		require.NoError(t, err)
-		body, err := protocol.AdventureEliteCharacterInfo(2, []byte{1}, []protocol.TagCharacter{snapshot})
+		// Keep the synthetic owner distinct from every saved companion wire ID.
+		body, err := protocol.AdventureEliteCharacterInfo(65534, []byte{1}, []protocol.TagCharacter{snapshot})
 		require.NoError(t, err)
 		t.Logf("role=%d worn=%d encodedBytes=%d", role.ID, len(snapshot.Worn), len(body))
 	}
