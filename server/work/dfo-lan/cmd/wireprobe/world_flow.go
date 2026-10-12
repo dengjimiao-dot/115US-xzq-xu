@@ -27,8 +27,6 @@ import (
 )
 
 type worldSession struct {
-	nonBakalEntrance      *catalog.RaidEntrance
-	nonBakalWaiting       bool
 	titleRestoreCharacter int64
 	// slotUnlockDirty 记录「本局副本内写入了新的扩展装备槽解锁位」。
 	// 装备栏挂锁只能由 EntryAddition（USERINFO1）投影，而客户端只在登录/选角/进副本那种时机构造装备栏行对象，副本内补发它会把装备栏显示清空（2026-09-22 实测）。
@@ -400,7 +398,7 @@ func (w *worldSession) enter(role database.Character, spawn database.WorldPositi
 	// must pass the regular level gates.
 	odyssey := character.OdysseyMember(role)
 	worldType := w.worldStorageType()
-	saved, e := w.loadNonBakalEntry(ctx, role.ID, state.Level, odyssey, spawn, worldType)
+	saved, e := w.service.Enter(ctx, w.account, role.ID, state.Level, odyssey, spawn, worldType)
 	if e != nil {
 		return e
 	}
@@ -524,9 +522,6 @@ func (w *worldSession) enter(role database.Character, spawn database.WorldPositi
 // same area never publishes other players. The flag comes from the imported
 // source map's own [is seria room warp] marker.
 func (w *worldSession) privateArea(pos database.WorldPosition) bool {
-	if w.nonBakalWaiting {
-		return true
-	}
 	if w.service == nil || w.service.Catalog.Areas == nil {
 		return false
 	}
@@ -778,10 +773,7 @@ func (w *worldSession) handleWithAreaTransition(id uint16, p []byte, send func(b
 			w.specialWarpPending = false
 			return e
 		}
-		if e = w.authorizeNonBakalArea(r); e == nil {
-			e = w.validateBleedingMineArea(r)
-		}
-		if e == nil {
+		if e = w.validateBleedingMineArea(r); e == nil {
 			e = w.validateBlackPurgatoryArea(r)
 		}
 		if e == nil {
@@ -813,10 +805,7 @@ func (w *worldSession) handleWithAreaTransition(id uint16, p []byte, send func(b
 			}
 			return send(1, 1418, refusal)
 		}
-		if e = w.authorizeNonBakalArea(r); e == nil {
-			e = w.validateBlackPurgatoryArea(r)
-		}
-		if e == nil {
+		if e = w.validateBlackPurgatoryArea(r); e == nil {
 			next, e = w.areaTransition(r)
 		}
 		if e != nil {
@@ -832,10 +821,7 @@ func (w *worldSession) handleWithAreaTransition(id uint16, p []byte, send func(b
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if w.nonBakalEntrance != nil {
-		// Preparation/waiting positions are session-local, including C35 movement.
-		w.state.Position = next
-	} else if w.channelType == 106 && next.Town == 218 {
+	if w.channelType == 106 && next.Town == 218 {
 		// 矿区位置属于当前频道会话，不能覆盖普通频道的城镇落点。
 		w.state.Position = next
 		event(map[string]any{"kind": "赤红铁矿会话位置更新", "character_id": w.role.ID, "position": next, "request": id})

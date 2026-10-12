@@ -44,14 +44,6 @@ func TestFogMainAndPreludeEntranceCurrentPVF(t *testing.T) {
 		t.Fatal(err)
 	}
 	entry := entries[main.Type]
-	if entry.Recruiting != nil && (entry.Recruiting.TownID != entry.Waiting.TownID || entry.Recruiting.AreaID == entry.Waiting.AreaID || len(entry.Recruiting.Walkable) == 0) {
-		t.Fatal("invalid preparation/waiting source split", entry)
-	}
-	for typ, e := range entries {
-		if e.Recruiting != nil {
-			t.Logf("raid channel=%d preparation=%d/%d waiting=%d/%d", typ, e.Recruiting.TownID, e.Recruiting.AreaID, e.Waiting.TownID, e.Waiting.AreaID)
-		}
-	}
 	if entry.Path != "contents/2024/asrahanraid/etc/asrahan.etc" || entry.Waiting.TownID != 186 || entry.Waiting.AreaID != 2 || entry.Bakal != nil {
 		t.Fatal("fog bound to foreign executor", entry)
 	}

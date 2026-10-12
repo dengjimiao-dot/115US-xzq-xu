@@ -352,7 +352,6 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 				spawn = database.WorldPosition{Town: t.TownID, Area: t.AreaID, X: x, Y: y}
 				client.event(map[string]any{"kind": "channel_town_spawn", "channel": client.channel, "channel_type": client.channelTypes[client.channel], "town": t.TownID, "area": t.AreaID, "x": x, "y": y, "spawn_rects": len(t.Walkable)})
 			}
-			client.releaseNonBakalRaid()
 			e = client.worldState.enter(role, spawn)
 			if e != nil {
 				client.event(map[string]any{"kind": "world_entry_error", "error": e.Error()})
@@ -573,10 +572,10 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 				// 2026-10-11 那次"锁没开"排查里最费时间的就是"日志里看不到发出去的字节"。
 				client.event(map[string]any{
 					"kind": "arad_pass_state_bytes", "character_id": role.ID,
-					"event_head_hex":  hex.EncodeToString(passEvent[:24]),
-					"charac_head_hex": hex.EncodeToString(passCharac[:24]),
-					"charac_bytes":    len(passCharac),
-					"event_bytes":     len(passEvent),
+					"event_head_hex":   hex.EncodeToString(passEvent[:24]),
+					"charac_head_hex":  hex.EncodeToString(passCharac[:24]),
+					"charac_bytes":     len(passCharac),
+					"event_bytes":      len(passEvent),
 				})
 			}
 		}

@@ -17,10 +17,8 @@ import (
 // gameConnection owns mutable state for exactly one client. Runtime services
 // are shared; characters shadows the shared service when channel context differs.
 type gameConnection struct {
-	nonBakalOwner  int64
-	nonBakalRaidID uint32
-	gmCalls        chan onlineGMCall
-	featureCalls   <-chan featurebridge.Call
+	gmCalls      chan onlineGMCall
+	featureCalls <-chan featurebridge.Call
 	*gatewayRuntime
 	characters           *character.Service
 	channel              uint32
@@ -73,7 +71,6 @@ func (gateway *gameGateway) handleClient(c net.Conn, channel uint32) {
 		client.event(v)
 	})
 	defer c.Close()
-	defer client.releaseNonBakalRaid()
 	client.peer = c.RemoteAddr().String()
 	if client.config.ChannelIdentity || client.channelCfg.SynchronizeIdentity {
 		ctx, notice, identityErr := channelIdentity(client.channelCfg, client.channel)
@@ -113,12 +110,6 @@ func (gateway *gameGateway) handleClient(c net.Conn, channel uint32) {
 		}
 		client.worldState.serverID = client.channelCfg.ServerID
 		client.worldState.channelType = client.channelTypes[client.channel]
-		if kind, ok := protocol.RaidKindForChannel(client.worldState.channelType); ok && kind != 8 {
-			if entry, bound := client.raidEntrances[client.worldState.channelType]; bound {
-				client.worldState.nonBakalEntrance = &entry
-				client.worldState.channelWorldIsolated = true
-			}
-		}
 		client.worldState.eliteChannelDirectory = client.gatewayRuntime.channelDirectory
 		client.worldState.eliteChannelInfo = client.gatewayRuntime.channelInfo
 		client.worldState.eliteChannelID = client.channel

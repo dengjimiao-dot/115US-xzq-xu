@@ -11,7 +11,6 @@ type RaidEntrance struct {
 	Path                              string
 	MemberMax, StartMinimum, PartyMax uint32
 	Waiting                           TownArea
-	Recruiting                        *TownArea
 	Bakal                             *BakalRaidRules
 }
 
@@ -30,13 +29,10 @@ func ImportRaidEntrances(a *pvf.Archive, directory *ChannelDirectory) (map[uint3
 		}
 		values := map[string][]uint32{}
 		for i, t := range ts {
-			if t.Text == "[RECRUITING ROOM]" && path == "contents/2022/bakalraid/etc/bakal.etc" {
-				continue
-			}
 			switch t.Text {
-			case "[RAID MEMBER MAX]", "[RAID START MINIMUM MEMBER]", "[RAID PARTY MAX]", "[WAITING ROOM]", "[RECRUITING ROOM]":
+			case "[RAID MEMBER MAX]", "[RAID START MINIMUM MEMBER]", "[RAID PARTY MAX]", "[WAITING ROOM]":
 				n := 1
-				if t.Text == "[WAITING ROOM]" || t.Text == "[RECRUITING ROOM]" {
+				if t.Text == "[WAITING ROOM]" {
 					n = 2
 				}
 				if _, dup := values[t.Text]; dup {
@@ -76,19 +72,6 @@ func ImportRaidEntrances(a *pvf.Archive, directory *ChannelDirectory) (map[uint3
 			return nil, fmt.Errorf("%s: empty waiting room", path)
 		}
 		r.Waiting = waiting
-		// Preserve the existing Bakal path; only bind non-Bakal preparation rooms.
-		if path != "contents/2022/bakalraid/etc/bakal.etc" {
-			if loc, exists := values["[RECRUITING ROOM]"]; exists {
-				if len(loc) != 2 || loc[0] != waiting.TownID || loc[1] == waiting.AreaID {
-					return nil, fmt.Errorf("%s: invalid recruiting room", path)
-				}
-				room, e := ImportTownArea(a, loc[0], loc[1])
-				if e != nil || len(room.Walkable) == 0 {
-					return nil, fmt.Errorf("%s: invalid recruiting source: %v", path, e)
-				}
-				r.Recruiting = &room
-			}
-		}
 		if path == "contents/2022/bakalraid/etc/bakal.etc" {
 			r.Bakal, err = ImportBakalRaid(a)
 			if err != nil {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"dfolan/internal/game/protocol"
 	"dfolan/internal/game/wire"
 	"dfolan/internal/servermod"
 	"encoding/hex"
@@ -53,7 +52,6 @@ var beforeClientTypeDispatch = [...]clientDispatchStage{
 }
 
 var commandDispatch = [...]clientDispatchStage{
-	(*gameConnection).dispatchNonBakalRaid,
 	(*gameConnection).dispatchAccountQueries,
 	(*gameConnection).dispatchUnifiedOptions,
 	(*gameConnection).dispatchSessionTransitions,
@@ -118,11 +116,6 @@ func (client *gameConnection) dispatch(requestData *clientRequest) dispatchActio
 	for _, handler := range commandDispatch {
 		if result := handler(client, requestData); result != dispatchNext {
 			return result
-		}
-	}
-	if client.worldState != nil {
-		if kind, raid := protocol.RaidKindForChannel(client.worldState.channelType); raid && kind != 8 {
-			client.logUnhandledRaidRequest(requestData)
 		}
 	}
 	return dispatchNext
