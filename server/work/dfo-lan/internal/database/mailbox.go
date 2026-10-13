@@ -205,6 +205,13 @@ func insertSystemMailTx(ctx context.Context, tx querySet, recipientID int64, sen
 	return q.InsertSystemMail(ctx, sqlcgen.InsertSystemMailParams{RecipientID: recipientID, SenderName: senderName, Body: body, Assets: encoded})
 }
 
+// InsertSystemMail 在**已持有角色行锁**的同一事务里发一封系统邮件：拾取满包转邮寄要把
+// 「背包不动 + 邮件落地 + 幂等回执」压成一次提交，否则会出现「邮件发了但事件键没记」
+// 或反过来。收件人固定取事务自己的角色，调用方不能指定别的角色。
+func (tx *Tx) InsertSystemMail(ctx context.Context, senderName, body string, assets []MailAsset) (int64, error) {
+	return insertSystemMailTx(ctx, tx.queries, tx.characterID, senderName, body, assets)
+}
+
 // CommitSystemMail creates one system mail for a recipient under the caller's
 // idempotency key/model (e.g. reward-mail-v1). Returns the new message id.
 func (s *Store) CommitSystemMail(ctx context.Context, account, id int64, version, key, model, senderName, body string, assets []MailAsset) (int64, bool, error) {

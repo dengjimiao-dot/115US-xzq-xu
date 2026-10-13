@@ -52,6 +52,10 @@ type PickupReceipt struct {
 	Award       Award
 	Destination uint16
 	Source      string
+	// Mailed/MailID：拾取那一刻背包放不下，这一件改走系统邮件附件（MailID 是留审计的
+	// 邮件编号），此时 Destination 不是背包格。旧回执里没有这两个键，读回来是零值。
+	Mailed bool  `json:",omitempty"`
+	MailID int64 `json:",omitempty"`
 }
 
 func (s *Service) Bootstrap(role Role) ([]byte, error) {
@@ -136,7 +140,38 @@ func (s *Service) PreparePickup(current Role, plan PickupPlan) (json.RawMessage,
 	if e != nil {
 		return nil, nil, e
 	}
-	result = PickupReceipt{drop.Run, drop.Map, drop.Object, drop.Award, slot, s.Catalog.Source.SaveIdentity()}
+	result = PickupReceipt{Run: drop.Run, Map: drop.Map, Object: drop.Object, Award: drop.Award, Destination: slot, Source: s.Catalog.Source.SaveIdentity()}
 	receipt, e := json.Marshal(result)
 	return updated, receipt, e
+}
+
+// PreparePickupToMail 是背包放不下时的拾取出口：用与 PreparePickup 同一套判据决定这一件
+// 是装备还是堆叠物，并按同一条实例规则（装备的耐久与训练封存）造出邮件附件。
+// 背包一格都不动 —— 落地发生在邮件表里，所以这里不返回新的角色状态。
+//
+// 堆叠物按**主目录**（s.Catalog）复核，不看 plan.Catalog：领取邮件那一步用的就是
+// `w.loot.Catalog`，而奥德赛货币只存在于会话的存储目录里，照 plan.Catalog 造附件会得到
+// 一封领不出来的信。主目录认不出就报错，让这次拾取照旧整笔拒绝、物品留在地上。
+//
+// 金币（模板 0）永不进来：它有独立的计数、不存在容量问题。
+func (s *Service) PreparePickupToMail(current Role, plan PickupPlan) (inventory.MailItem, error) {
+	drop, awardCatalog := plan.Drop, plan.Catalog
+	if drop.Award.Template < 2 || drop.Award.Amount == 0 {
+		return inventory.MailItem{}, fmt.Errorf("pickup award cannot be mailed")
+	}
+	b, e := inventory.ReadBag(current.State)
+	if e != nil {
+		return inventory.MailItem{}, e
+	}
+	if awardCatalog.Items[drop.Award.Template].Kind != "stackable" {
+		return b.MailEquipment(s.Equipment, drop.Award.Template)
+	}
+	if main, ok := s.Catalog.Items[drop.Award.Template]; !ok || main.Kind != "stackable" {
+		return inventory.MailItem{}, fmt.Errorf("pickup award cannot be claimed from mail: %d", drop.Award.Template)
+	}
+	item := inventory.MailItem{Stack: &inventory.BagItem{Template: drop.Award.Template, Amount: drop.Award.Amount, ExpireTime: inventory.GrantExpireTime}}
+	if _, e = item.Row(); e != nil {
+		return inventory.MailItem{}, e
+	}
+	return item, nil
 }

@@ -12,6 +12,13 @@ var ErrMailUntradeable = errors.New("附件不可交易或尚未支持该特殊�
 var ErrMailGold = errors.New("邮件金币不足或超出携带上限")
 var ErrMailBagFull = errors.New("背包没有空位，邮件附件仍保留在邮箱")
 
+// ErrBagFull / ErrEquipmentBagFull / ErrPetContainerFull 是「放不下」的容量哨兵。发放侧要把
+// 容量不足和其它校验失败分开（拾取在满包时转邮寄，其它失败仍整笔拒绝），所以调用方按
+// errors.Is 判定，不再匹配消息文本。
+var ErrBagFull = errors.New("bag category is full")
+var ErrEquipmentBagFull = errors.New("equipment bag is full")
+var ErrPetContainerFull = errors.New("pet consumable container is full")
+
 // MailItem 保存完整实例，而非领取时重新按模板生成物品。
 type MailItem struct {
 	Stack     *BagItem      `json:"stack,omitempty"`

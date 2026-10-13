@@ -29,10 +29,33 @@ func (w *worldSession) pickup(p []byte) ([]outboundPacket, error) {
 	return w.finishPickup(ctx, saved, receipt, applied, true)
 }
 
+// mailedPickupPackets 是「背包满 ⇒ 这一件改走邮箱」之后的应答集：背包一格都没动，所以不能发
+// NOTI14（那会在客户端造出玩家其实没有的行）；NOTI39 用中性体 —— 八条 (flag=0, amount) 行、
+// 不带普通尾，只把场景物摘掉，不写任何物品或货币增量（分支判据见 protocol.PickupConfirmed）。
+//
+// 同一对象号重发只会让客户端再摘一次，是安全的，所以这条不看 applied：东西已经被邮件收走，
+// 地面再留着就永远捡不起来 —— 那正是要消除的状态。
+func (w *worldSession) mailedPickupPackets(receipt loot.PickupReceipt, acknowledge bool) ([]outboundPacket, error) {
+	body, e := protocol.PickupConfirmed(receipt.Object, w.role.WireID, 0, true)
+	if e != nil {
+		return nil, e
+	}
+	plan := make([]outboundPacket, 0, 2)
+	if acknowledge {
+		plan = append(plan, outboundPacket{"pickup_ack", 1, 43, []byte{1}})
+	}
+	plan = append(plan, outboundPacket{"pickup_scene_removed", 0, 39, body})
+	log.Printf("拾取满包转邮箱：角色=%d 对象=%d 模板=%d 数量=%d 邮件=%d", w.role.ID, receipt.Object, receipt.Award.Template, receipt.Award.Amount, receipt.MailID)
+	return plan, nil
+}
+
 func (w *worldSession) finishPickup(ctx context.Context, saved database.Character, receipt loot.PickupReceipt, applied, acknowledge bool) ([]outboundPacket, error) {
 	previousState := w.role.State
 	// 落账成功后先保留最新状态，后续通知构造失败也不能恢复旧背包。
 	w.role = saved
+	if receipt.Mailed {
+		return w.mailedPickupPackets(receipt, acknowledge)
+	}
 	var e error
 	// Account-shared materials (colored cube fragments, souls, old souls)
 	// never stay in the bag: sweep the freshly picked stack into the account

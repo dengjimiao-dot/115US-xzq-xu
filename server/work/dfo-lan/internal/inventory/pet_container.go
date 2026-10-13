@@ -182,7 +182,7 @@ func (b Bag) addPetStack(r BagRules, template, amount, expire, explicit uint32) 
 		b.PetItems = append(b.PetItems, BagItem{Slot: slot, Template: template, Amount: amount, ExpireTime: expire})
 		return b, slot, nil
 	}
-	return original, 0, fmt.Errorf("pet consumable container is full")
+	return original, 0, ErrPetContainerFull
 }
 
 // SweepPetConsumables preserves old character saves while relocating pet
