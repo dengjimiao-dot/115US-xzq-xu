@@ -1,3 +1,38 @@
+## 2026-10-13 拾取满包转邮箱（已实机确认）
+
+业主口径：「修复拾取 现在拾取不检测背包吗 背包满了 拾取物品后没反应 物品也卡住了」→ 现场确认为**物品还在地上、捡不起来**（不是被吃掉）→ 行为定调：「背包满时**自动转邮箱**」→ 实机复测后「目前很完美」。
+
+### 根因（不是"服务端不检测背包"）
+
+服务端一直有容量判定（`inventory.Bag.Add` → `bag category is full`、`AddEquipment` → `equipment bag is full`），但满包时走 `protocol.PickupRefused` = `Refusal(4)+对象号`，**地面物品不删、也没有任何提示**：
+
+- IDA（独占副本，`sub_145244E00` = CMD43 GET_ITEM 回执 handler，读出 u32 对象的站点正是注释里那个 `0x145244E5D`）：`code 4 / 22` 是**结算地面物**的分支（比对对象号、查堆叠上限、超限时用 `sub_145B53010` 销毁并弹 dstr 42077）；只有**循环没匹配到对象**才落到 LABEL_60 弹 dstr 793「Your Inventory is full; you cannot receive this item.」。也就是说我们满包发的 code 4 走的是"成功收尾"那条路，客户端自然"没反应"；末尾 LABEL_61 把 obj+11897 的在途标志清掉（`sub_145B54A20`），所以也不会崩，只是东西永远留在地上。
+- 官服抓包 cap43（28 次拾取）里 **S2C op43 一帧都没有**：`附录B` 那批 `0x002B` S2C 全是同号的 `ENUM_NOTIPACKET_PVP_SEAT_STATE`，恒定体 `01b2ce8d59400000`。官服的拾取应答只有 NOTI39 `GET_ITEM` + 背包更新 ⇒ "满包该回什么码"没有官方样本，不猜；改成把这一件落到玩家一定拿得到的地方（邮箱）。
+
+### 改动
+
+- `internal/inventory/{mailbox,bag,equipment,pet_container}.go`：把「放不下」抽成哨兵 `ErrBagFull`/`ErrEquipmentBagFull`/`ErrPetContainerFull`（**消息文本一字未改**，`client_dispatch_inventory.go`、`moon_rewards.go`、`boostup_flow_test.go` 那几处按文本匹配的调用点照旧有效）；新增 `Bag.MailEquipment`，与 `AddEquipment` 同一条 `EquipmentCatalog.Reward` 耐久 + 训练封存判据 —— 邮箱里领到的那件必须与直接入包的那件是同一个实例。
+- `internal/workflow/loot_pickup.go`：拾取事务由 `CommitCharacterEvent` 改为 `CommitCharacterEventTx`，回调里**先试着入袋，只有容量错误才在同一事务、同一幂等键 `pickup:<run>:<object>`、同一 model** 下发一封系统邮件；非容量失败（超堆叠上限、目录认不出的模板）仍整笔拒绝。回执仍是一条 `PickupReceipt`（新增 `Mailed`/`MailID`，`omitempty` ⇒ 历史回执读回零值，不动存档），所以重放走原来那条按回执比对的幂等路径：客户端连点不会第二封、也不会二次入账。
+- `internal/loot/pickup.go`：`PreparePickupToMail` 按拾取同一判据分装备/堆叠；堆叠物用**主目录** `s.Catalog` 复核（领邮件那一步用的就是它，奥德赛货币只存在于会话的存储目录，照 `plan.Catalog` 造附件会得到一封领不出来的信），主目录认不出就照旧拒绝。
+- `internal/database/{mailbox,system_mail}.go`：`Tx.InsertSystemMail`（在持角色锁的事务里发信，收件人取事务自己）、`SystemMailAssetFor`（原样带走已造好的实例，不重新生成）。
+- `cmd/wireprobe/loot_flow.go`：`receipt.Mailed` 分支只发 CMD43 ACK + **NOTI39 中性体**（`object+actor+40×0`，八条 flag=0 行、不带普通尾 ⇒ 只摘地面物、不写任何物品/货币增量），**不发 NOTI14**；日志 `拾取满包转邮箱：角色/对象/模板/数量/邮件`。中性体这条不看 `applied`（重发只是再摘一次，而东西已被邮件收走，留在地上就是那个"卡住"）。
+- 邮件署名/正文 `Field Loot` 是**调服策略文本**并在此登记：当前 PVF 只有 `equipmenttransformsystem.cos` 的 `[full inventory mail title/contents]`（装备变换专用），掉落拾取在源里没有对应文案键；源日后给出拾取专用键就改读源。未新增 JSON 内容表、未新增开关。
+
+### 验证
+
+- 实机（业主操作，`runtime/roles_..._20261013_225741_898237_next37`）：23:02:02 与 23:02:12 连续触发满包拾取**装备**（模板 100354167 / 100401592 / 100401632 / 100401600 / 100401601），邮件编号 80/82/84/86/88/90；对应帧序列 `pickup_ack(43,01)` + `pickup_scene_removed(39)`，事件体 `1910000001000000` + 40 个 `00`，**该次没有 `pickup_inventory_updated`**（同会话 23:05:36 的正常拾取仍是 `…01007c0000` 带普通尾 + NOTI14，构成对照）。业主：地面物消失、邮件到位、1 已触发、3 邮件送达时会有通知这很正常、目前很完美。
+- `go build ./...`、`go vet ./...` 退出 0；`go test ./... -count=1` **全量零 FAIL**（无 env 钉的干净基线）。新增用例：`internal/inventory/bag_capacity_test.go`（哨兵可判定、同模板合并不误判、超上限不算满包、`MailEquipment` 实例 == 入包实例）、`internal/workflow/loot_pickup_mail_test.go`（SQLite 真库：满包转邮箱且背包未动 + 重放不二次 / 非容量失败不发信 / 金币满包照旧入袋）、`cmd/wireprobe/loot_flow_mail_test.go`（应答里不得出现 NOTI14、自动拾取只发 NOTI39）。
+- 确认基线 `bin/wireprobe-pvf.exe` = `61c86c6bb7668dec9df9005eee54db49411d0f72e67a2123d968abcb6f229fab`（33,247,744 B，实机跑的就是它）。本轮候选另存 `.tmp/pickup-mail-20261013/wireprobe-pickup-mail.exe`=`eb625dd8…`。⚠️ 该 exe 与 CHANGELOG 上一条记的 `82304d45…` 不同：22:19 并发会话把 `wireprobe-pvf.exe` 与 `wireprobe-handoff-source.exe` 顶成过同一个 `8cb09b1e…`，之后又重建为现值 —— 根工作区非 git，**本轮无法 commit**，改动只落在工作区。
+
+### 未闭环
+
+1. **邮箱也满**那条路径实机未测：`insertSystemMailTx` 会返回 `ErrMailFull` ⇒ 整个拾取事务回滚、物品留在地上（不丢，但仍"捡不起"）。判据与处置口径等业主定。
+2. 训练副本（`tutorialActive`）里满包转出的装备带 `TutorialLocked`，封存语义在邮箱领取侧未实机验证。
+3. 满包**消耗品/宠物消耗品**转邮箱只由单测背书（实机只犯了装备）。
+4. CMD43 回执 handler 的 `code 21/19/109/81/46205~46207` 各分支语义本轮只读到手、未逐个映射到服务端场景；`code 109` 会销毁地面物并弹 19646，是"别人的东西已被拿走"那类语义的候选落点，未接线。
+5. 取证产物：3.7 GB 独占 IDB 副本 `D:\DNF115\123\pickup-bagfull-work\` 已按惯例删除，只留三份关键伪代码到 `analysis/dumps/pickup-cmd43/`（`cmd43_get_item_reply.c` = CMD43 回执 handler `sub_145244E00`、`cmd43_sender.c` = C2S 发包器 `sub_145AF4A70`、`caller_145AE55A0.c` = 拾取决策处，里面能看到客户端**只预检堆叠上限、不预检空位**，所以满包必然把 CMD43 发上来）。探针脚本在 `analysis/dumps/ida_pickup_bagfull.py`、`ida_pickup_bagfull2.py`。
+
+
 ## 2026-10-13 冷启动自动脱武器：mode-1 快照里的普通装备行收回（已实机确认）
 
 业主口径：「帮我看一下日志 角色上线发生了什么 导致我的角色武器摘除到背包了」→「现在**每次重开游戏**武器都会卸下」→「只要是**有特殊武器的职业**都中，比如我的角色有光剑掌握」→ 指路 `C:\Users\yubin\Desktop\yuanma`「之前就没有这样武器被卸下的情况」。对象：角色 1（Poison，swordman，115 级）穿戴槽 12 的 `101040831 Primeval Star - Lightsabre`（`[equipment type] [weapon] 25`、`[rarity] 8`、`equipment/character/swordman/weapon/beamsword/101040831.equ`）。

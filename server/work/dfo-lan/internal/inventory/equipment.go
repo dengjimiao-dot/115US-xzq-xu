@@ -452,11 +452,29 @@ func (b Bag) AddEquipment(c *EquipmentCatalog, slots [2]uint16, id, count uint32
 		}
 	}
 	if len(available) != int(count) {
-		return b, nil, fmt.Errorf("equipment bag is full")
+		return b, nil, ErrEquipmentBagFull
 	}
 	b.Equipment = append([]BagEquipment(nil), b.Equipment...)
 	for _, n := range available {
 		b.Equipment = append(b.Equipment, BagEquipment{Slot: n, Template: id, Durability: d, TutorialLocked: b.tutorialActive})
 	}
 	return b, available, nil
+}
+
+// MailEquipment 按 AddEquipment 同一条发放规则造一件邮件附件：耐久取 Reward（奖励规则，
+// 不是掉落池规则），训练封存跟随角色当前状态。满包拾取转邮寄用它，玩家从邮箱领到的
+// 那一件与直接入包的那一件才是同一个实例。
+func (b Bag) MailEquipment(c *EquipmentCatalog, id uint32) (MailItem, error) {
+	if c == nil {
+		return MailItem{}, fmt.Errorf("invalid equipment award")
+	}
+	d, e := c.Reward(id)
+	if e != nil {
+		return MailItem{}, e
+	}
+	item := BagEquipment{Template: id, Durability: d, TutorialLocked: b.tutorialActive}
+	if e = item.ValidateRecord(); e != nil {
+		return MailItem{}, e
+	}
+	return MailItem{Equipment: &item}, nil
 }

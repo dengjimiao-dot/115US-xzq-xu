@@ -603,7 +603,7 @@ func (b Bag) Add(c catalog.LootCatalog, r BagRules, id, amount uint32, expireTim
 			return b, slot, nil
 		}
 	}
-	return original, 0, fmt.Errorf("bag category is full")
+	return original, 0, ErrBagFull
 }
 
 // SweepStackSlots relocates saved stackables with known categories. It leaves

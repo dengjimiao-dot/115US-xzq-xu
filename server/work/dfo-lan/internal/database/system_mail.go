@@ -38,6 +38,20 @@ func SystemMailAssets(space byte, grants []GrantItem) ([]MailAsset, error) {
 	return out, nil
 }
 
+// SystemMailAssetFor 把发放侧**已经造好实例**的附件（装备实例或堆叠行）编成一封系统邮件
+// 的附件行。与 SystemMailAssets 的分工：那条按「模板 + 件数」现场生成堆叠行，这条原样带走
+// 调用方已经算好的耐久、封存等字段 —— 拾取满包转邮寄要用它，才不会把一件装备重新生成一遍。
+func SystemMailAssetFor(item inventory.MailItem) (MailAsset, error) {
+	if _, e := item.Row(); e != nil {
+		return MailAsset{}, e
+	}
+	encoded, e := json.Marshal(item)
+	if e != nil {
+		return MailAsset{}, e
+	}
+	return MailAsset{Item: encoded}, nil
+}
+
 // SendSystemMailWithCharacterUpdate 把「改角色状态」和「发系统邮件」压进同一事务：
 // mutate 在角色行 FOR UPDATE 之后执行，邮件与状态一起提交。邮件编号写进事件回执，
 // 事后可从 character_events.outcome 审计这一封到底是哪一封。
