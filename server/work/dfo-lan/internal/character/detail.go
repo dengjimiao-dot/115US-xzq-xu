@@ -139,16 +139,24 @@ func (s *Service) entryAdditionWithStats(role Character, state State, stats prot
 				// Avatar slots (<= 11) ride the avatar row layout; the creature
 				// body slot 26, creature gear slots 27..29 and the pet-skin slot 32
 				// ride the plain / creature-extension layouts (protocol.DetailedEquipment
-				// pins all of them against native reader sub_1452C1540). Ordinary
-				// slots 12..25 use its plain row as well. The reader deletes omitted
-				// worn objects; NOTI13/14 window rows and mode-0 appearances do not
-				// replace this authoritative snapshot for the equipment play guide.
+				// pins all of them against native reader sub_1452C1540).
 				//
 				// 实机 2026-09-27：幻化槽（32）原先被这条过滤挡掉，导致重登后
 				// 客户端手上没有槽 32 的物品，F6 幻化框拿不到模板而空白（同一次
 				// 登录里槽 26 的本体宠物因为被包含所以正常）。它是 [creature] 物品，
 				// 行布局与槽 26 同源。
-				if !(item.Slot <= 29 || item.Slot == inventory.CreatureSkinSlot) {
+				//
+				// 普通装备槽 12..25 目前不发。它们进 mode-1 快照后，每次冷启动
+				// 客户端都会发一条原生「脱下」CMD19 把槽 12 的武器挪到背包第一空格
+				// （mode-1 的解析器 sub_14563D400 就是发这条包的调用侧）。
+				// 上游 b5da968a(MR !229) 放宽这两个槽的理由是「已穿武器仍触发
+				// 『目前没有装备的武器』引导」；实机 2026-10-13 排除这两个槽后连做
+				// 五组脱→穿，红条 `[Equipment Missing] / No weapon is equipped.`
+				// 一次都没出现，且客户端仍能在脱下包里自己填出槽 12 的模板
+				// ⇒ 那条前提未被证实（!229 自己的验收栏也写着"实机效果仍待验收"）。
+				// 若将来真出现指南侧症状，收口是保留普通行并补上实例字段
+				// （mode-1 行 +32..+36），不是回到"整批塞进来"。
+				if !(item.Slot <= 11 || (item.Slot >= 26 && item.Slot <= 29) || item.Slot == inventory.CreatureSkinSlot) {
 					continue
 				}
 				var dw protocol.DetailedWorn

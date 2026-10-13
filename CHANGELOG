@@ -1,3 +1,93 @@
+## 2026-10-13 冷启动自动脱武器：mode-1 快照里的普通装备行收回（已实机确认）
+
+业主口径：「帮我看一下日志 角色上线发生了什么 导致我的角色武器摘除到背包了」→「现在**每次重开游戏**武器都会卸下」→「只要是**有特殊武器的职业**都中，比如我的角色有光剑掌握」→ 指路 `C:\Users\yubin\Desktop\yuanma`「之前就没有这样武器被卸下的情况」。对象：角色 1（Poison，swordman，115 级）穿戴槽 12 的 `101040831 Primeval Star - Lightsabre`（`[equipment type] [weapon] 25`、`[rarity] 8`、`equipment/character/swordman/weapon/beamsword/101040831.equ`）。
+
+### 现场事实（`runtime/roles_..._20261013_174643_262742_next37/events.jsonl`）
+
+- 服务端**没有**脱过任何装备：脱下是客户端自己发的原生 CMD19，形状 `src list0 slot9 item=0 → dst list3 slot12 item=101040831`，count=1、selection=0xffffffff，与业主 18:15:41 手动脱另一件的包同形；`MoveOrdinary` 照做落库，名望 82671→69956，穿戴行 30→29。64 条历史装备移动里只有 1 条是脱下形状。
+- 拖回去是有效的：19:35:04 的穿戴包被提交，`equipment_appearance_refreshed` 穿戴后 867 B、脱下后 828 B（差的正是那条 31 字节外观行），存档 `inventory.worn` 回到 `slot 12 = 101040831`。**「没有红叉」是预期的**：红叉是可穿戴性徽标，这件武器通过，所以它不是被拒的穿戴，而是一条被成功执行的移动命令。
+- 触发是**进程启动一次性**，不是进城一次：三次冷启动（17:47/18:35/19:34）都出现 `C2S31(3145) + C2S143(flag36)` → 约 160 ms → 脱下 CMD19；同会话 18:22:51 小退重登（武器穿着、CMD4/CMD124 全套照发）三帧一个没来、也没脱。
+- `C2S390`（EXPAND_EQUIPSLOT_FLAG_UPDATE）此前被我当成相邻线索，**作废**：18:39–18:42 周期性发了 11 次、18:22:51 重登也发了一次且都没跟 CMD19；IDB 侧唯一发包器 `sub_1458D01E0` 的实参是调用点写死的 `0`，不是客户端算出的解锁位掩码。
+
+### 根因
+
+USERINFO1 mode-1（NOTI2 type0）里的**普通装备行**。上游 `b5da968a`（2026-10-12 21:10，"Fix ordinary worn-object restoration and dungeon-selection cancellation"）把 mode-1 穿戴快照的槽过滤从 `slot<=11 || 26..29 || ==32` 放宽到 `slot<=29`，普通装备槽 12..25 从此进这个包；但它**没有**同时把实例字段写进行里 —— `internal/game/protocol/detail_equipment.go` 里 `row[32:36]=Record[14:18]` / `row[36]=Record[18]` 那段（业主旧树 `yuanma` 带、注释记为 G0504：清零会抵消上一次 N14 附魔）在当前树不存在，且 `detailedWornOrdinaryGearSlotMin/Max` 与 `G0504` 在 `repo-115` 全历史 0 命中（旧树那条分支从未被喂过普通行）。结果：客户端每次收到一条「槽 12 有东西、实例字段全零」的行，就把这件武器挪回背包**第一个空格**（正好是观测到的 list0 slot9）。
+
+存档侧对照：武器记录 `[14:18] = 54 b9 9d 00` 非零，确实是有内容被清零，不是「本来就空」。
+
+IDB 侧调用链（独占副本 `DFO.exe.i64`，probe9/13/15/16/17）：`sub_145637A20`（角色包 switch，`case 1` 逐条循环读 u16 计数 + 每记录两 u8）→ `sub_14563D400`（就是 `entry_addition.go` 注释里逐字段标过的 mode-1 addition 解析器：`14563d472`/`14563d692` 扩展槽解锁字节/`14563d6cb→1452c1540` 装备块/`14563c1f0`/`14563d9aa`）→ 同模块 `sub_1458A3A10`：用 `sub_145AD8D10`（「第 i 格是否占用」）走到**第一个空格**，再调 count=1 的 CMD19 发包器 `sub_145ADF2B0`。CMD19 七个发包器里只有它写死 count=1，与观测包体一致。
+
+### 被否证的模型（记下来，别再走）
+
+- **「脱武器是 3145 自动接取的下游」——否证**。3145 的接取来自客户端硬编码的一次性引导 `sub_146CD04E0`（守卫 `if (!xmmword_14EF5AFA8)` ⇒ 每进程一次），它先 `sub_144F672F0(QuestManager, 0C49h)` 发 CMD31、紧接着发 `CMD143 u8 0 / u32 36 / u8 1`，与日志顺序逐字节一致；但**脱武器不在这个函数里**，且收回普通装备行后 CMD31/CMD143 照旧出现（20:50:31 仍 rejected）而武器不再被脱。两件事只是同一个启动窗口里的邻居。
+- 接单前客户端只查两样：`sub_144F40790`（vtable 符号 `CNRDQuestModule::checkQuestRecvSlot`，遍历 `QuestManager+8/+16` 步长 24 的**已接数组**数同类任务做槽位检查）和 `sub_144F54990`（FNV-1a `unordered_set` 查找，桶在 `QuestManager+352`）。**没有一处读 NOTI342 的完成位图** ⇒ 把 3145 做成 completed、或改 342 编码，都拦不住这条重试。顺带确证 `internal/game/protocol/quest_finish.go` 关于「342 格式未闭环」的注释是**过时且误导**的：仓内 oracle（`server/reference/analysis-tools/quest_completed_oracle.py` + `testdata/native_completed_quests.json`，样本 `02000000490c00003f9c0000` → ids `[3145, 39999]`、消费 12 字节、`assert o.bitmap == ids`）证明 raw「u32 计数 + u32 id」就是原生格式。
+- 「缺 need-skill/光剑掌握」「CMD390 解锁位为 0」「缺引导标记」三个早期猜测此前已各自被否证，见上面现场事实。
+
+### 改动
+
+`internal/character/detail.go`：穿戴槽过滤回退到旧树的 `!(item.Slot <= 11 || (item.Slot >= 26 && item.Slot <= 29) || item.Slot == inventory.CreatureSkinSlot)`，注释写明代价与真正的收口方向。只改这一处；未动协议编码器、未动 `runtime/storage/`、未动其它会话的文件。
+
+### 验证
+
+- 实机（业主操作）：候选生效后新会话 `roles_..._20261013_204936_054992_next37`（20:50:08–20:51:01）`C2S19` **0 条**、`equipment_move_committed` 0 条、没有 `character_fame_updated`（名望保持 82671）、`enter_gameworld_complete_sent` 正常。同日**反面对照**：19:55:39 那次仍跑旧 exe（19:56:45 冷启动）→ 19:56:46 出现脱下包、19:56:48 业主手动穿回。存档现值 `worn` 30 行、`slot 12 = 101040831`。业主口径「现在没有脱武器的情况了」。
+- `go build ./...` 退出 0；`go vet ./...` 干净；`go test ./... -count=1` 失败集合 = `dfolan/internal/character` 两个用例：`TestAvatarDetailCandidateIsolation`、`TestEntryAdditionRestoresOrdinaryWornObjects/{weapon-and-armour,armour-without-weapon}`。两者都是 `b5da968a` 新增、断言「槽 12..25 必须进 mode-1」的契约测试，红的方向与本次回退一致，**没有为了凑绿改测试**；其余包全绿。
+- 同日晚些时候（指南红条实机未复现之后）按现状重钉这两个契约测试：`TestEntryAdditionRestoresOrdinaryWornObjects`→`TestEntryAdditionOmitsOrdinaryWornObjects`（计数节 payload 偏移 361 必须为 0，另加一条「时装+宠物仍投影」），`TestAvatarDetailCandidateIsolation` 期望增量 394→**267**（时装行 135 + 宠物行 132）并新增「普通行不得漏进 mode-1」断言。重跑 `go build ./...`、`go vet ./...` 退出 0，`go test ./... -count=1` **45 包全绿、失败集合为空**。`protocol.DetailedEquipment` 仍编码/校验普通行（`detail_equipment_ordinary_test.go` 保持绿），那是将来补实例字段的落点。
+- **确认基线 `bin/wireprobe-pvf.exe` = `82304d45230adfb44571f4c49f6a7af820da8f5ff78acfddf75a509cec3a5f86`（33,289,216 B）**；被替换的前一份 = `f662903d7671e6b668928120604cf5b98c7f129a5dba35ad29c91f717348a03d`（33,227,776 B，备份在 `server/work/dfo-lan/.tmp/weapon-takeoff-20261013/`，丢了可从源码重编）。
+
+### 未闭环
+
+1. **两个契约测试已按现状重钉**（2026-10-13 21:0x）：`TestAvatarDetailCandidateIsolation`（增量改回 时装135+宠物132=267，并新增断言「普通行不得进 mode-1」）与 `TestEntryAdditionRestoresOrdinaryWornObjects`→`TestEntryAdditionOmitsOrdinaryWornObjects`（计数节偏移 361 必须为 0，另加一条「时装+宠物仍投影」用例）。`go build`/`go vet` 退出 0，`go test ./... -count=1` **45 包全绿、无失败**。终局形态仍是 **①保留普通装备行 + ②把 `Record[14:18]→行+32..35`、`Record[18]→行+36` 补回去**（旧树 `Desktop\yuanma` 的 G0504 段是唯一已知实现，且当前树连宠物行这两格也丢了），届时这两个测试要再翻一次——本轮没有实测那条，因为一次只验一个变量。
+2. **Seria 房间装备指南：实机未复现回归**（业主 2026-10-13 21:46–21:48 现场看）。`b5da968a`（= MR **!229** `fix/worn-object-snapshot-and-dungeon-cancel-20261012`）的原文症状是「已穿武器的角色仍触发『目前没有装备的武器』引导」；回退后按该理由应当复现。实测：武器穿着中（槽 12 = `101040831`）连做 5 组脱→穿（槽 18/12/23/14/14，每次 `change item` 重算，全部提交，武器那组名望 84199→71484→84199），**红条「[Equipment Missing] / No weapon is equipped.」一次都没出现**（文案 key `playguide_05`，见 `string/clientonly.uv.str`；它在 `list/characterplayguidealarm.lst` 的轮播清单里）。同一批包里客户端自己填出 `目标=list3 槽12 物品101040831` ⇒ 它的穿戴模型里槽 12 的对象与模板都在。**⇒ !229 的前提「mode-1 缺普通行会把已穿武器判成空槽」在本 build 上没有被证实过**（它自己的验收栏也写着「用户客户端实机效果仍待验收」），剩下的唯一可能是 playguide 经 `+0x1F08` 读另一张表。样本限制：一个角色、一次观察，且告警轮播带 86400 间隔，当日已消费过的告警不会重弹。
+3. **3145 每次冷启动重复请求接取**仍在（服务端回 `quest is completed or requires configuration migration` 且不回应答）。已证明它与脱武器无因果，但「CMD31 失败不回应答」本身偏离仓内惯例（CMD34→`QuestSubmitRefused`、CMD19→`ItemMoveRefused`），要不要收另开一轮。
+4. `internal/game/protocol/quest_finish.go` 的过时注释待按上面「被否证的模型」一节改写。
+5. 本次取证产物在仓库外 `D:\DNF115\123\quest-autoaccept-work\`（probe9~17 的 json/c/asm），3.7 GB 的 IDB 独占副本收尾删除。
+
+
+
+业主口径：「帮忙看看 PVF 里有没有这个副本出东西爆率」→「有太初的爆率吗」→「你再看看源码，如果爆率没问题就收口了」。对象是 100005066／100005067／100005068（`contents/2026/skyofathousandseasofborder/dungeon/orderoftheborder_{unique,legendary,epic}.dgn`）。
+
+### 源侧事实（本轮从内层 PVF 现场重读，非引用旧导出）
+
+内层 `Script.inner.pvf` = `7ef2db59…`（与 `server/work/client-build/Script.inner.manifest.json` 一致）；`epic.ctp` 现场 raw sha256 = `52810da52a566db5…`，与 `configs/attunement-rewards.generated.json` 记录**逐字节相同** ⇒ 那份导出物就是当前源。四层：
+
+| 层 | 源位置 | 史诗档读数 |
+| --- | --- | --- |
+| 进哪张图 | dgn `[maze chance rate]` ×3 | 990000／9143／857 ⇒ 99.0000%／0.9143%／0.0857%（传说、神器是单一 maze 1000000） |
+| 珠子保底 | `epic.ctp` `[fixed drop table]`（maze 0/1/2 同权重） | epic `10419728` 914300 ⇒ 91.43%；primeval `10419729` 85700 ⇒ **8.57%** |
+| 天平追加 | `[additional drop table]` 14 个位次 | 涌起 9/8.5/8%（×3/×5/×10 件）、同样的命运 9%、祝福气息 301~304 各 9%、神兵认主 305 **2%**、虚无之魂 1001 占三个位次 5/10/3%、宝匣 3002 2%、太初星蕴石 2001 7.5% |
+| 命运的凝械 | `[hidden drop table]` 仅 epic 有，maze 1 四条＋maze 2 两条 | **无权重列**（只有 tier/key/item）⇒ 按源不掷，玩家 CMD2406 选格 |
+
+三档载体的太初概率：史诗 8.57%／传说 2.80%／神器 0.59%。载体展开（`stackable/10419001/1041972{4,7,8,9}.stk`）第 4 池**三档完全相同且无空条目** ⇒ 拿到载体即必出一件太初装备：`10362488` 7.6923% → 组 21258（42 件等权 30）、`10355163` 7.6923% → 组 21308、`10362489` 84.6154% → 组 21259（36 件等权 10）⇒ 史诗档**每一件**太初武器 0.0157%、非武器 0.2014%。光辉意志那一池（史诗 0.36%／传说 0.18%／神器 0.03%）落到 `10420675`→`10419739`，源里带 `[oath item booster]`／`[lottery ani info]` ⇒ **不代开**，原样给玩家自己开（「排除已持有」那层逻辑本来就在客户端）。
+
+另：dgn 写了 `[exclude gold drop]`／`[exclude world drop]`／`[exclude monster random drop]`／`[exclude monster card area drop]` ⇒ 这个本**没有常规怪物掉落**，"出东西"只看上面四层。
+
+### 实现侧判据（逐条核过，全部为真）
+
+1. 权重空间是**常量** `attunementWeightSpace = 1000000`，加载器对「fixed 权重合计」与「`[select prob]` 合计」偏离一百万直接拒载（`TestAttunementRewardsRefusesBrokenInvariants/{drop_list,select_prob}_off_the_million_space`）⇒ 四张表都是恰好 1e6，不存在归一化漂移。
+2. 保底是**机制不是巧合**：`fixedFloor` 取该表 40..45 里最低档当下界，`pickTierAbove` 只在下界及以上掷（70/71 幸运轴不参与比较；出现不可比标签**报错**而不是猜）。
+3. `pickAttunementBranch` 按**位次**累加 `selectProb`，不按 `[effect index]` 聚合 ⇒ `eff 1001` 那三个位次（虚无之魂 ×5/×10/×15）不会被并成一条读成 6%。
+4. 掷中即付：`RollPlanned` 付 `OathTemplate × OathAmount`，**不再按档位重选** ⇒ 14 支全部可达（`TestPlanRunReachesEveryAdditionalBranch`）。此前只带 tier 时 epic 标签同时挂 10 支以上，实测只有 3 支付得出东西。
+5. 展开层认 `[draw count]`（`10419729` 的 12 抽、`10419727` 的 6 抽），`-1` 占概率不发货。
+6. 触发门 100 万场实测：99.0000→98.9888／0.9143→0.9250／0.0857→0.0862，最大 **1.13σ**，零张不可达。
+7. `[hidden drop table]` 不掷 = 与源一致（源里没有权重列），不是缺口。
+8. 球色与掉落同源：`PrepareBorderRewards` 先把奖单**展开成最终物品**，再取其中装备的 `[rarity]` 反推档位（rarity 8 → 45）⇒ 发得出 45 就意味着地上已经有一件太初装备；stackable（含 `10409489 Prime Stella`）被 `s.stackable()` 跳过，不参与球色。
+9. **默认档上没有调参倾斜**：`configs/pvf-default.json` 的 `environment` 里 `DFO_ATTUNEMENT_REBALANCE = "0"` ⇒ `attunement-fixed-tilt`（默认 25）不生效，fixed 池按源原样掷；那条环境串里也没有 `DFO_MAZE_FORCE` / 任何档位注入。
+
+⇒ **爆率这条判为无问题。**
+
+### 新增：`-border-grade` / `DFO_BORDER_GRADE`（诊断入口，不参与正常路径）
+
+业主「我想试试直接 44 看看是什么」。把 noti 2756 的 word1（球色档 40..45）钉成指定值，**不动已经冻结的奖单** ⇒ 同一份掉落可以只换球色看客户端怎么走。越界值只念日志不改行为；钉 40/41 换算不出演出格 ⇒ 那一帧照旧整个不发（既有行为）。启动器 `launch` 不转发未知参数，走环境变量（网关子进程继承，判据同 `scripts/launch-attunement-reward.cmd`）。
+
+### 验证
+
+`go build ./...` 退出 0；`go vet ./...` 干净；`go test ./... -count=1` **无 FAIL**；`go test ./cmd/wireprobe/` 44.9s ok；`TestChooseMazeDistributionMatchesSourceRates` PASS。改动文件：`cmd/wireprobe/{config.go,world_flow.go,client_connection.go,border_reward_flow.go}` + 配置金样契约 `cmd/wireprobe/testdata/config_legacy.json`、`config_help.json`（新键按 `omen-hold` 的既有写法补齐；help 金样重跑后 diff 只有这一个 flag 那两行，无其它漂移）。**基线 `bin/wireprobe-pvf.exe` = `f662903d7671e6b668928120604cf5b98c7f129a5dba35ad29c91f717348a03d`（33,227,776 B）**，前一份 `4246d5c9c4c24066…`。
+
+### 未闭环（不要当成已确认）
+
+**dgn `[normal group index] 1 21251 1 21600/21601/21602` → `10420063/64/65 Material Expected Reward Booster`（虚无之魂／光辉意志／银币那条「基础奖励·其他」）仍然拿不到**：声明组的掷骰在 `internal/loot/session.go:214` 的 `if !hellOwned && (!excludeGold || !excludeRandom) && …` 里，而 `dungeonDropExclusions`（`internal/loot/dungeon_rules.go:27`）把 `[exclude gold drop]`／`[exclude monster random drop]` 分别置真，这三张 dgn **两个都写了** ⇒ 整段跳过。这条边界是 2026-09-29 实装 `[exclude monster random drop]` 时形成的（`abyss_path_boundary_test.go` 记着当时的状态），**不是针对 21600~21602 的裁决** —— 所以 G2 的准确说法是「入口被源自己的排除标记连带关掉」，而不是 `preserveAbyssDrops` 主动关的。本轮**没有改动**（且按业主既有口径这条**别顺手打开**：组链里的 `10400396 Void Soul` 与 CTP eff1001 的 `10409483~85` 是同一笔货币两条路，有双发风险）。`[drop count]` 的「X 次」按**同一件 ×X** 付，官方到底是重掷 X 次还是同件 ×X 仍未取证，代码里已写明。根工作区不是 git ⇒ 本笔无法 commit，改动只在工作区。
+
+
 ## 2026-10-13 大深渊球色（noti 2756 第 2 格语义找回）+ 事件认账与「神兵认主」（源行 305）职业筛
 
 业主症状：「大深渊掉落太初装备，但球体颜色是史诗的」。判定口径是**本场有太初级物品 ⇒ 球色到太初**（明确否掉按 maze／异空间分档）。副本 100005066／100005067／100005068（Verge of Order／调律之边界）。
