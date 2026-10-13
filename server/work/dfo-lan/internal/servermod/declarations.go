@@ -49,6 +49,11 @@ func (p DeclarationProblem) String() string {
 //
 // reward.script 没有独立的注册函数（它由 RegisterRewardScript 满足），
 // 所以这里按"该 mod 有没有登记过奖励规则脚本"来判定。
+//
+// ⚠️ 这里**刻意不含** `server.shutdown`：核对是拿这份输出与 mod.json 的 `hooks` 做双向差集，
+// 而启动器侧 `modkit` 的白名单还没有这个名字，mod 没法合法地声明它。
+// 把它算进"实际注册"就会永远落在 extra 里 → 每个写了收尾钩子的 mod 都启动失败。
+// 收尾钩子的存在性另有 HasShutdown / Description() 里的 shutdown 计数。
 func RegisteredHooks(modID string) []string {
 	seen := map[string]bool{}
 
@@ -73,6 +78,17 @@ func RegisteredHooks(modID string) []string {
 			seen[HookProtocolRequest] = true
 		}
 	}
+	// ⚠️ 这里**刻意不含** `server.tick`：上游 86c5e893（mod 热开关）把 host.go 里的 tick
+	// 实现（`HookServerTick` / `TickContext` / `RegisterTick` / `ticks` 注册表 / 驱动）
+	// 一并移除了，只留下本文件对 `ticks` 与 `HookServerTick` 的引用 ⇒ 主干编译不过。
+	// 本笔按最小口径删掉这个悬空引用（不恢复该钩子：连驱动侧都已不存在，
+	// 恢复一半只会得到一个永远不会被调用的钩子）。
+	// 若上游本意是保留 server.tick，修法应是恢复 host.go 的实现 —— 它在 `296f2d65` 里完整。
+	// ⚠️ 这里同样**刻意不含** `server.shutdown`（见函数头注释）：它的存在性由 HasShutdown
+	// 单独回答。本函数是「可以出现在 mod.json `hooks` 里的钩子」这一侧的口径，
+	// 而 `server.shutdown` 进不了 modkit 的白名单 ⇒ 算进来就会永远落在 extra 里，
+	// 于是每个写了收尾钩子的 mod 都让服务端拒绝启动（fail-closed 反过来咬人）。
+	// 见证：live_test.go 的 TestShutdownHookIsNotADeclarationProblem。
 	mu.RUnlock()
 
 	// 脚本注册表用的是自己的锁（见 scripts.go 的 scriptMu）。
@@ -139,8 +155,10 @@ func declaredHooks(modDir string) (modID string, hooks []string, ok bool, err er
 
 // CheckDeclarations 核对 modsDir 下每个"带 mod.json 的 mod 目录"的声明与注册。
 //
-// 被禁用的 mod 直接跳过：它的 Register() 本来就会在开头 return，
-// 不注册任何钩子是**预期行为**，不该报成问题（见 enabled.go 的口径）。
+// 被禁用的 mod 直接跳过：核对要回答的是"管理员勾了、它却什么都没干"，
+// 而"它本来就不该干"是勾选本身的效果，不是故障。停用方向有两种实现都合法——
+// 按新口径照常登记钩子（由 live 集合停止派发），或按旧写法在 Register() 开头
+// 直接 return（一个钩子都不登记）——两种都不该报成问题。
 //
 // 返回的问题按 mod id 稳定排序；错误只来自"读得到文件但解析不了"这类硬故障。
 func CheckDeclarations(modsDir string) ([]DeclarationProblem, error) {

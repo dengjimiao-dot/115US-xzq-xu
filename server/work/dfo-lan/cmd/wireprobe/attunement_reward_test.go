@@ -267,9 +267,9 @@ func TestBorderRewardFrameFollowsTheFrozenGrade(t *testing.T) {
 		slot  uint32
 		none  bool
 	}{
-		{"传说", 43, 41, false},        // LegendaryDrop
-		{"史诗", 44, 42, false},        // EpicDrop
-		{"太初", 45, 43, false},        // PrimevalDrop
+		{"传说", 43, 41, false},          // LegendaryDrop
+		{"史诗", 44, 42, false},          // EpicDrop
+		{"太初", 45, 43, false},          // PrimevalDrop
 		{"独有（四格的最低那格）", 42, 40, false}, // UniqueDrop
 		{"普通（演出表没有这一格）", 40, 0, true},
 		{"稀有（演出表没有这一格）", 41, 0, true},
@@ -285,18 +285,22 @@ func TestBorderRewardFrameFollowsTheFrozenGrade(t *testing.T) {
 			if !ok || slot != c.slot {
 				t.Fatalf("AnimationGrade(%d) = (%d,%v)，want %d", c.grade, slot, ok, c.slot)
 			}
-			p, err := protocol.BorderRewardInfo(slot)
+			p, err := protocol.BorderRewardInfo(slot, c.grade)
 			if err != nil {
 				t.Fatal(err)
 			}
-			// 三格同值：实测只确认了驱动格是第 1 个（`40,43,43` 播的是最低那格），
-			// 而任何一格越界都会让整帧退化成最后一格 —— 旧版把第 1 格留在模块初值
-			// -1，于是每次都被兜底成太初。
-			for i := 0; i < 3; i++ {
-				if got := binary.LittleEndian.Uint32(p[i*4:]); got != slot {
-					t.Fatalf("位移 %d = %d(%s)，want 与第 1 格同值 %d",
-						i, got, loot.AnimationSlot(got), slot)
-				}
+			// 第 1 格是演出格（实测只确认了它是驱动格：`40,43,43` 播的是最低那格）；
+			// 第 2 格是本场档位（`getHellDungeonItemMaxRarity` 读它，副本里那颗球的阶段
+			// 分支也读它）；第 3 格是常量下界。任一格越界整帧都会退化成最后一格 ——
+			// 旧版把第 1 格留在模块初值 -1，于是每次都被兜底成太初。
+			if got := binary.LittleEndian.Uint32(p[0:4]); got != slot {
+				t.Fatalf("演出格 = %d(%s)，want %d", got, loot.AnimationSlot(got), slot)
+			}
+			if got := binary.LittleEndian.Uint32(p[4:8]); got != c.grade {
+				t.Fatalf("本场最高品质 = %d，want %d", got, c.grade)
+			}
+			if got := binary.LittleEndian.Uint32(p[8:12]); got != 40 {
+				t.Fatalf("第 3 格 = %d，want 常量下界 40", got)
 			}
 		})
 	}
@@ -311,6 +315,57 @@ func boundaryDungeon() *dungeon.Session {
 			{Type: 8, Reference: "boundary of attunement"},
 		}},
 	}}
+}
+
+// CMD2406 的回信：弹窗能不能关掉只有两个前提，都在这一条里钉住。
+//
+// 前提一是**路由**：2406 必须同时过 `dungeonRequest`（dispatchDungeon 的 switch 守卫）
+// 和 `observedGameRequest`（否则正文采样门把它掐掉）—— 只登前者是实机 2026-10-04
+// 那轮 `case 1654` 永不执行的教训，这里不能重犯。
+// 前提二是**信封种类**：客户端只在 kind==1 的帧上查 CMD 表（qword_14E6836F8），
+// 发成 noti 就等于没发。
+func TestAttuneConfirmReplyReachesTheCmdHandler(t *testing.T) {
+	if !dungeonRequest(2406) {
+		t.Fatal("cmd 2406 过不了 dispatchDungeon 的守卫，弹窗又是一帧静默丢弃")
+	}
+	if !observedGameRequest(2406) {
+		t.Fatal("cmd 2406 被正文采样门掐掉，verified 拿不到")
+	}
+	w := &worldSession{}
+	// 「点 OK 就回」是无条件的：实机正文 `02000000 02000000 00000000 00000000` 的两个
+	// u32 语义未取证，所以这里既不看它们、也不因它们改变应答。
+	for _, body := range [][]byte{
+		nil,
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		hexBody(t, "02000000 02000000 00000000 00000000"),
+	} {
+		plan := w.answerAttuneConfirm(body)
+		if len(plan) != 1 {
+			t.Fatalf("body=%x 应恰好回一帧：%+v", body, plan)
+		}
+		p := plan[0]
+		if p.Kind != 1 || p.ID != 2406 {
+			t.Fatalf("信封 = kind %d id %d，客户端只有在 kind==1 才查 CMD 表", p.Kind, p.ID)
+		}
+		// 分发器在交给处理器之前替处理器读掉 1 字节 flag（flag==0 时再读一个 u16），
+		// 正文短于 3 字节会让它读到包外。
+		if len(p.Payload) < 3 {
+			t.Fatalf("应答正文 %x 太短，分发器会 over-read", p.Payload)
+		}
+		if p.Payload[0] != 0 {
+			t.Fatalf("flag 必须为 0（非 0 只跑类级收尾，不关旧实例）：%x", p.Payload)
+		}
+	}
+}
+
+func hexBody(t *testing.T, s string) []byte {
+	t.Helper()
+	s = strings.ReplaceAll(s, " ", "")
+	raw, err := hex.DecodeString(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
 }
 
 // smallAbyssDungeon 是**另一套玩法**（终末之边界）。

@@ -81,6 +81,9 @@ func (w *worldSession) dungeonGate(p []byte) ([]outboundPacket, error) {
 			if scene.QuestID > 65535 || !accepted[uint16(scene.QuestID)] {
 				return nil, fmt.Errorf("town arrival scene %d requires accepted source quest %d", requested, scene.QuestID)
 			}
+			if err := w.validateTownArrivalQuest(requested); err != nil {
+				return nil, err
+			}
 			return []outboundPacket{
 				{"town_arrival_scene_gate_ack", 1, 15, []byte{1}},
 				{"town_arrival_scene_selection_sent", 0, 27, protocol.EnterDungeonSelection()},
@@ -207,6 +210,9 @@ func (w *worldSession) selectDungeon(p []byte) (*dungeon.Session, []outboundPack
 		// become a private dungeon session through the following CMD16.
 		if r.Quest != scene.QuestID || w.state.Position.Town != scene.Town || w.state.Position.Area != scene.Area || !w.selectingDungeon || w.approvedDungeonGate != r.ID {
 			return nil, nil, fmt.Errorf("town arrival scene %d has no approved matching gate for quest %d at %d/%d", r.ID, r.Quest, w.state.Position.Town, w.state.Position.Area)
+		}
+		if err := w.validateTownArrivalQuest(r.ID); err != nil {
+			return nil, nil, err
 		}
 	}
 	if d, ok := w.dungeons.Dungeons[r.ID]; ok && d.Odyssey {
@@ -662,7 +668,7 @@ func dungeonSelectionHead() []outboundPacket {
 }
 
 // dungeonSelectionHeadFor 组装这次进本的「选图 UI 层」；relay 为真 = 无缝再次挑战
-//（CMD72 选项 5，见 card_flow.go 的 restartDungeon）。
+// （CMD72 选项 5，见 card_flow.go 的 restartDungeon）。
 //
 // ⚠️ relay 时**只发 NOTI27**：连门应答（NOTI15）也不发 —— 对齐官服。那一轮服务端的帧列里
 // 既没有 15 也没有 16（analysis/tasks/next178 §14），客户端那一轮也没发 CMD15/CMD16；
@@ -838,7 +844,15 @@ func (w *worldSession) seamlessRoomReset() (*dungeon.Session, []outboundPacket, 
 	return s, plan, nil
 }
 
-func (w *worldSession) finishDungeonLoading(p []byte) ([]outboundPacket, error) {
+func (w *worldSession) finishDungeonLoading(p []byte) (plan []outboundPacket, e error) {
+	// ⚠️ 这条路径上任何 error 都等于「加载应答整段发不出去」，玩家看到的是**卡在加载界面**，
+	// 而调用方只把错误存进局部变量、从不打印（实机 2026-10-12 21:49 与 22:08 两次，
+	// 日志里最后一个字是 noti 2755 那行，查不到任何原因）。失败必须当场说话。
+	defer func() {
+		if e != nil {
+			log.Printf("CMD37 进本应答没能生成（客户端会卡在加载界面）：%v", e)
+		}
+	}()
 	if w == nil || w.activeDungeon == nil {
 		return nil, fmt.Errorf("loading without dungeon session")
 	}
@@ -863,7 +877,7 @@ func (w *worldSession) finishDungeonLoading(p []byte) ([]outboundPacket, error) 
 	}
 	// 官服巴卡尔军团段（20261002 抓包 21:42:19）：CMD37 ack 之后、N30 之前
 	// 下发 N1474 阶段倒计时（伊斯官服 timer_sync 回放同序）。非维纳斯零开销。
-	plan := []outboundPacket{{"dungeon_loading_ack", 1, 37, []byte{1}}, {"dungeon_actor_state", 0, 3, state}}
+	plan = []outboundPacket{{"dungeon_loading_ack", 1, 37, []byte{1}}, {"dungeon_actor_state", 0, 3, state}}
 	plan = append(plan, w.venusStageTimer(time.Now())...)
 	plan = append(plan, w.forestStageTimer(time.Now())...)
 	plan = append(plan, w.apocalypseStageTimer(time.Now())...)
@@ -1339,8 +1353,13 @@ func (w *worldSession) returnFromDungeonSelection(p []byte) ([]outboundPacket, e
 	if e != nil {
 		return nil, e
 	}
-	plan[0] = outboundPacket{"dungeon_selection_return", 0, 132, protocol.DungeonSelectionReturn()}
-	return plan, nil
+	// GF115 C132 (wire 20628/31677/31831) is bodyless and has no same-ID
+	// response: N23 then N24 restores the owned town. N132 is a different
+	// selection-state notification (1452aee40 sets the selection object's
+	// state to 5/6); sending it here changes selection before the town load.
+	// Keep the shared actor/appearance restoration after the town head,
+	// without the C42 acknowledgement used by the in-dungeon give-up path.
+	return append([]outboundPacket{plan[2], plan[3], plan[1]}, plan[4:]...), nil
 }
 
 // fatalDropFailure classifies a failed drop roll for an already-confirmed death.
@@ -1477,13 +1496,23 @@ func (w *worldSession) monsterDeath(p []byte, event func(map[string]any)) ([]out
 		// （`client_trace`：`recv item - [ 108030760 : 0 ]`），放进 N38 死亡应答下发；
 		// 职业完全对不上（玩家是剑士）⇒ 客户端「击杀 BOSS 后」当场 `exit=0xC0000005`。
 		// 官服这条内容的地面掉落本来就是空的，排除它才是同族口径。
-		if w.loot != nil && (!unowned || blackBoss) && w.venus == nil && w.ispins == nil && w.forest == nil && w.apocalypse == nil && !w.isDimCloisterChannel() {
+		if w.loot != nil && (!unowned || blackBoss) && w.venus == nil && w.ispins == nil && w.forest == nil && w.apocalypse == nil && !w.isDimCloisterChannel() && !w.ownsNativeLegion() {
 			// 掉落会话的创建只有一处（ensureDropSession，见 border_reward_flow.go）：
 			// 调律之边界在**加载应答阶段**就要用它冻结奖单，所以这里通常是取回同一实例。
 			w.ensureDropSession()
 			w.drops.BlackPurgatory = w.loot.BlackPurgatory
 			w.drops.BlackPurgatoryPlan = w.cardPlan
 			rows, err := w.drops.Death(w.activeDungeon, uint16(r.Entity))
+			// ★ 活动 1093「额外掉落奖励」的可观测性：结算结果写在 `SkippedKinds` 里
+			// （`extradrop1093_energy_awarded:<总量>`），但此前**没有任何地方**把它记进日志
+			// ⇒ 加了挂钩也看不出生效没有。只在**目标副本**（Endkeeper of Order）里每次确认死亡
+			// 记一条，带上掉了几件 + skipped 明细；不在目标副本里完全不记，免得淹掉会话日志。
+			if w.drops.ExtraDrop != nil && w.drops.ExtraDrop.Enabled() && w.activeDungeon != nil &&
+				w.drops.ExtraDrop.Matches(w.activeDungeon.Definition) {
+				event(map[string]any{"kind": "extradrop1093_death", "entity": r.Entity,
+					"map": w.activeDungeon.Room.Map, "entity_confirmed": confirmed,
+					"drops": len(rows), "skipped": w.drops.Skipped[uint16(r.Entity)]})
+			}
 			if actor, known := w.activeDungeon.HellPartyReward(uint16(r.Entity)); known && confirmed {
 				errText := ""
 				if err != nil {
@@ -1500,6 +1529,7 @@ func (w *worldSession) monsterDeath(p []byte, event func(map[string]any)) ([]out
 				w.noteDropGap(event, uint16(r.Entity), err)
 				rows = nil
 			}
+			w.noteAttunementGroundDrops(rows)
 			body, err = protocol.MonsterDeathDrops(uint16(r.Entity), rows)
 			if err != nil {
 				return nil, err
@@ -1663,7 +1693,7 @@ func (w *worldSession) monsterDeath(p []byte, event func(map[string]any)) ([]out
 	// 这一句是「补上闸门」而不是「绕过闸门」：`Completed()` 一旦为真，接下来那句
 	// `completeDungeon()` 就会走次元回廊分支发出横幅，翻牌界面才有依据出现。
 	// 幂等：MarkCompleted 只是置一个 bool，重复调用无害。
-	if w.activeDungeon != nil && confirmed {
+	if w.activeDungeon != nil && confirmed && !w.ownsNativeLegion() {
 		if _, ok := legion.IsDimCloisterStageDungeon(w.activeDungeon.Definition.ID); ok &&
 			w.activeDungeon.LegionArenaBossDown() {
 			w.activeDungeon.MarkCompleted()
@@ -1717,6 +1747,15 @@ func (w *worldSession) bossCheck(p []byte, event func(map[string]any)) ([]outbou
 }
 
 func (w *worldSession) completeDungeon() ([]outboundPacket, error) {
+	if w == nil || w.activeDungeon == nil {
+		return nil, nil
+	}
+	if w.ownsNativeLegion() {
+		if !w.activeDungeon.Completed() || w.completionSent {
+			return nil, nil
+		}
+		return w.completeNativeLegionStage()
+	}
 	if w.bakal != nil {
 		return nil, nil
 	} // raid phase owns completion and rewards
@@ -1725,6 +1764,13 @@ func (w *worldSession) completeDungeon() ([]outboundPacket, error) {
 	} // Moon final death owns its completion.
 	if !w.activeDungeon.Completed() || w.completionSent {
 		return nil, nil
+	}
+	// 图内确认要掉的那一件是**搭下一次掉落帧**落地的（见 loot.Session.SetPendingDrop）。
+	// 结算了还没掉出去，说明这一场再没有一帧掉落 —— 必须说话，不能让「点了 OK 却
+	// 什么都没掉」再变成一次只能靠玩家肉眼发现的丢件。
+	if left := pendingAttuneHiddenDrop(w); len(left) > 0 {
+		log.Printf("attune hidden drop unpaid at clear: run %s still holds %v (no drop frame came after the confirm)",
+			w.activeDungeon.RunID, left)
 	}
 	if w.bleedingMineStart != nil {
 		return w.completeBleedingMineStage()

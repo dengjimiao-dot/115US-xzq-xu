@@ -7,10 +7,13 @@ import (
 	"dfolan/internal/database"
 	"dfolan/internal/game/protocol"
 	"dfolan/internal/inventory"
+	"dfolan/internal/oracleresearch"
 	"dfolan/internal/workflow"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -455,6 +458,21 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 			} else {
 				plan.BoostTraining = status
 			}
+			// 665「直升毕业后的挑战」：客户端全程不发 CMD681，面板**只由服务端推的
+			// NOTI2722 渲染** ⇒ 登记与推帧必须挂在进城路径本身，不能等副作用。
+			// 实机 2026-10-11 会话 ..._172251_037171：毕业角色（存档 enrolled=true、
+			// 2639 状态=2）进城全程零条 boost_challenge_* —— 这条调用点又丢了。
+			// 未毕业角色在 ReconcileBoostChallenge 里早退（零写入、body 为 nil），
+			// preparePackets 跳空帧 ⇒ 普通进城序列逐字节不变。
+			challengeCtx, challengeCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			challengeRole, challengeBody, challengeErr := client.boostChallengeEntrySync(challengeCtx, role)
+			challengeCancel()
+			if challengeErr != nil {
+				client.event(map[string]any{"kind": "boost_challenge_restore_error", "character_id": role.ID, "error": challengeErr.Error()})
+			} else {
+				role = challengeRole
+				plan.BoostChallenge = challengeBody
+			}
 		}
 		// 活动 331 每日签到的状态帧（NOTI1379）。**只在 108 表里真有 331 那一行时推**：
 		// 客户端是活动打开时才注册那个 handler（见 event_info_activity.go），
@@ -467,6 +485,130 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 				plan.AttendanceDaily = daily
 				// 把解码后的状态一并记下来（判据见 attendance_flow.go 的注释）
 				client.logAttendanceDailyState(role.ID, daily)
+			}
+		}
+		// 活动 313 HoneyTime 的状态帧（NOTI1294）：与 331 同一个门禁（108 表里有 313 才推）。
+		// 进度**按角色持久化**：这里读回今天已累计的秒数并续上；跨天/换期会先归零再落库。
+		if activityEventInfoRows() != nil && client.worldState != nil {
+			honeyCtx, honeyCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			honeyState, honey, honeyErr := client.worldState.honeyTimeRestore(honeyCtx, time.Now())
+			honeyCancel()
+			if honeyErr != nil {
+				client.event(map[string]any{"kind": "honey_time_restore_error", "character_id": role.ID, "error": honeyErr.Error()})
+			} else {
+				plan.HoneyTimeState = honey
+				client.logHoneyTimeState(role.ID, honeyState, honey)
+			}
+		}
+		// 活动 1093「额外掉落奖励」的状态帧（NOTI2880，8 B）：与 313 同一个门禁
+		// （108 表里有 1093 这条行才推）。两个 u32 的语义未证 ⇒ 取值走 extraDropInfoPayload，
+		// 可用 DFO_EXTRADROP_INFO 覆盖做实机 A/B。
+		if activityEventInfoRows() != nil && client.worldState != nil && client.worldState.extradrop != nil {
+			info := extraDropInfoPayload(client.worldState.extradrop)
+			plan.ExtraDropInfo = info
+			client.event(map[string]any{"kind": "extradrop_info_local", "character_id": role.ID, "bytes": len(info)})
+		}
+		// 活动 685「奥拉蔻的装备模块研究」面板的两帧（NOTI2806 / 2809）：与 313/1093 同一个门禁。
+		// 2806 的字段语义未证 ⇒ 取值见 simresearch_flow.go 的 simResearchEtcPayload
+		//（只允许用 DFO_ORACLE_PRODUCED 覆盖「已产次数」这一个数，禁整块覆盖）。
+		// 2809 送"空格子"（照抄客户端 handler 自己的默认 10×(02 00 00 00 00)）。
+		// ★ 2026-10-12 定案：那句 "Please try again later." 的元凶是**应答自己的第 1 个 u16**
+		// （见 simresearch_actions.go 的门禁注释），与这两条**无关** ⇒ 恢复为登录必推。
+		// 而且 2806 是面板"下次生产费用"的**唯一来源**（业主截图 10010 = 10×(1000+1)，
+		// 那个 1000 正是我们此前在 2806 里硬编码的"已产次数"）⇒ **不推就没有费用显示**。
+		// 要关掉做 A/B 用 `DFO_ORACLE_ENTRY=off`。
+		if activityEventInfoRows() != nil && !strings.EqualFold(strings.TrimSpace(os.Getenv("DFO_ORACLE_ENTRY")), "off") {
+			// ★ 读角色的真实"本周已产次数"（跨周自动归零）—— 面板按钮上的费用就是客户端
+			// 按这个次数算出来的（`10 × (n+1)`），所以必须填真值，不能硬编码。
+			var produced uint32
+			if st, e := oracleresearch.ReadState(role.State); e == nil {
+				st = st.Normalize(oracleresearch.WeekStartOf(time.Now()))
+				produced = st.Produced
+			}
+			etc := simResearchEtcPayload(produced)
+			// 组装板（2809）：结果格 = (是否本自然周已用, 解锁所需已产次数)。
+			// 两者分别来自角色存档（RowsUsed，按周归零）与脚本（`[combine]` 的 result [args]）。
+			var boardUsed [3]bool
+			if st, serr := oracleresearch.ReadState(role.State); serr == nil {
+				st = st.Normalize(oracleresearch.WeekStartOf(time.Now()))
+				boardUsed = st.RowsUsed
+			}
+			var boardUnlock []uint32
+			if client.worldState != nil && client.worldState.oracle685 != nil {
+				boardUnlock = client.worldState.oracle685.CombineUnlock
+			}
+			board := simResearchCreationBoardPayload(boardUsed, boardUnlock)
+			plan.SimResearchEtc = etc
+			plan.SimResearchCreationBoard = board
+			// ★ 2807（模块整份清单）**登录也要推**：它是「客户端知道玩家拥有哪些模块」的
+			// 唯一来源，不推的话右侧 Set Module / Part Module 格子计数全 0、图鉴空白
+			// （实机 2026-10-12 登录没推 ⇒ 业主看到格子全 0）。
+			// 此前只在生产成功后推，所以「要生产过一次面板才亮」，这是个坑。
+			var invenAll []byte
+			if client.worldState != nil && client.worldState.oracle685 != nil {
+				if bag, berr := inventory.ReadBag(role.State); berr == nil {
+					invenAll = protocol.SimulationResearchInvenAll115(
+						simResearchModuleEntries(client.worldState.oracle685, bag))
+				}
+			}
+			plan.SimResearchInvenAll = invenAll
+			// ★ ★ ★ 把 21 字节原文打进事件日志：本次事故里"送出去的到底是什么"查了很久，
+			// 根因是环境变量把载荷整块换掉了。留 hex 以后一眼可见，别再靠推理。
+			client.event(map[string]any{"kind": "sim_research_frames_local", "character_id": role.ID,
+				"produced": produced, "etc_hex": hex.EncodeToString(etc),
+				"etc_bytes": len(etc), "board_bytes": len(board), "inven_all_bytes": len(invenAll)})
+		}
+		// 战令（阿拉德通行证）：0x08A1 / 0x08A2 都是纯 S2C 状态，登录必须下发，
+		// 否则客户端的通行证面板是空白（抓包：登录期各下发 18 / 21 次）。
+		// 与 331/313 不同，**不额外按 108 表门禁**：抓包里这两帧与活动表无关，
+		// 而且 `aradPass` 为 nil（源读失败）时整块本来就不执行。
+		if client.worldState != nil && client.worldState.aradPass != nil {
+			// ⓪ **换日收口**：任务进度与经验池是**每天**归零的（业主口径，06:00 UTC）。
+			// 放在最前面：后面的激活/状态帧都基于换日后的状态构造。
+			rollCtx, rollCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			rolled, rollErr := client.worldState.ensureAradPassDailyRoll(rollCtx)
+			rollCancel()
+			if rollErr != nil {
+				client.event(map[string]any{"kind": "arad_pass_daily_roll_error", "character_id": role.ID, "error": rollErr.Error()})
+			} else if rolled {
+				client.event(map[string]any{"kind": "arad_pass_daily_rolled", "character_id": role.ID})
+			}
+			// ① 账号级一次性发放通行证物品（业主口径：战令按账号，给第一个登录的角色发）。
+			// 幂等键带模板号 + 账号 ⇒ 同账号重复登录、换角色登录都不会重复发。
+			// 发放成功后，"拥有即激活"那条链会在下面同一次进城流程里置 Royal + 发首发奖励。
+			grantCtx, grantCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			granted, grantErr := client.worldState.ensureAradPassPassItem(grantCtx)
+			grantCancel()
+			if grantErr != nil {
+				client.event(map[string]any{"kind": "arad_pass_pass_item_error", "character_id": role.ID, "error": grantErr.Error()})
+			} else if granted {
+				client.event(map[string]any{"kind": "arad_pass_pass_item_granted", "character_id": role.ID})
+			}
+			// ① "拥有通行证物品即激活"：先把状态收口（置 Royal / 加购票经验 / 发源里的首发奖励），
+			// 再构造状态帧 —— 激活写进角色状态后，本函数稍后的入场库存快照也会带上首发奖励。
+			actCtx, actCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			_, actErr := client.worldState.ensureAradPassActivation(actCtx)
+			actCancel()
+			if actErr != nil {
+				client.event(map[string]any{"kind": "arad_pass_activation_error", "character_id": role.ID, "error": actErr.Error()})
+			}
+			// 激活会改角色状态：状态帧必须用**会话里那份最新角色**，否则皇家轨仍显示上锁。
+			if client.worldState.role.ID != 0 {
+				role = client.worldState.role
+			}
+			if passEvent, passCharac, passErr := aradPassPayloads(client.worldState.aradPass, role); passErr != nil {
+				client.event(map[string]any{"kind": "arad_pass_state_restore_error", "character_id": role.ID, "error": passErr.Error()})
+			} else {
+				plan.AradPassEvent, plan.AradPassCharac = passEvent, passCharac
+				// ★ 把两帧的**真实字节**记下来（前 24 字节即可看出 4B 头、槽位字段）：
+				// 2026-10-11 那次"锁没开"排查里最费时间的就是"日志里看不到发出去的字节"。
+				client.event(map[string]any{
+					"kind": "arad_pass_state_bytes", "character_id": role.ID,
+					"event_head_hex":  hex.EncodeToString(passEvent[:24]),
+					"charac_head_hex": hex.EncodeToString(passCharac[:24]),
+					"charac_bytes":    len(passCharac),
+					"event_bytes":     len(passEvent),
+				})
 			}
 		}
 		if client.characters != nil {
@@ -882,6 +1024,23 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 		}
 		if client.lootService != nil {
 			rewardCtx, rewardCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			legionRewards := &workflow.LegionRewardService{Store: client.gameStore, Awarder: &inventory.Awarder{Catalog: client.lootService.Catalog, Rules: client.lootService.BagRules, Equipment: client.lootService.Equipment}}
+			legionRecovered, legionErr := legionRewards.Recover(rewardCtx, role)
+			if legionRecovered.ID != 0 {
+				role = legionRecovered
+			}
+			if legionErr != nil {
+				client.event(map[string]any{"kind": "legion_reward_recovery_pending", "character_id": role.ID, "reason": legionErr.Error()})
+			}
+			apocalypseRewards := &workflow.ApocalypseRewardService{Store: client.gameStore, Awarder: legionRewards.Awarder}
+			apocalypseRecovered, apocalypseErr := apocalypseRewards.Recover(rewardCtx, role)
+			if apocalypseRecovered.ID != 0 {
+				role = apocalypseRecovered
+			}
+			if apocalypseErr != nil {
+				client.event(map[string]any{"kind": "apocalypse_reward_recovery_pending", "character_id": role.ID, "reason": apocalypseErr.Error()})
+			}
+
 			var raidRecovered database.Character
 			var raidErr error
 			if client.bakalRewardService != nil {

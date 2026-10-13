@@ -29,6 +29,9 @@ var beforeClientTypeDispatch = [...]clientDispatchStage{
 	// dispatchIspins 必须首位（next79）：伊斯族 CMD2043/2045/2046 与末世录
 	// 共用信封、按内容号分流，终局剧情 191 也须先于通用 191 处理器。
 	(*gameConnection).dispatchIspins,
+	// Current content102/103 requests must precede legacy captured Cloister
+	// routing and the generic Apocalypse family.
+	(*gameConnection).dispatchNativeLegion,
 	// dispatchVenus 紧随其后：维纳斯待机区 CMD12/13 与家族拦截（内容 106）
 	// 必须先于 dispatchLegion，防止落进末世录处理器。
 	(*gameConnection).dispatchVenus,
@@ -70,6 +73,14 @@ var commandDispatch = [...]clientDispatchStage{
 	// dispatchAttendanceClaim 排在 dispatchBoostEvent 之前：两者都处理 CMD680，
 	// 签到那一站只在载荷里的活动号 == 331 时接管，其余原样放行（见 attendance_claim.go）。
 	(*gameConnection).dispatchAttendanceClaim,
+	// dispatchHoneyTimeClaim 紧挨着签到那一站：同样是 CMD680 的分流，
+	// 只在活动号 == 313 时接管（见 honey_time_claim.go）。
+	(*gameConnection).dispatchHoneyTimeClaim,
+	// dispatchAradPass 再挨一站：CMD680/681 上活动号 == 516/10005 的是战令
+	// （阿拉德通行证）的领奖/查询（见 aradpass_flow.go）。
+	(*gameConnection).dispatchAradPass,
+	// dispatchSimResearchAction 处理活动 685 的三条动作命令（2412/2413/2414 = 生产/组装/分解）。
+	(*gameConnection).dispatchSimResearchAction,
 	(*gameConnection).dispatchBoostEvent,
 	// dispatchAvatarCloset 处理衣柜（寄存衣柜）的 cmd1102/1103。
 	(*gameConnection).dispatchAvatarCloset,

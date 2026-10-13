@@ -54,7 +54,12 @@ import (
 //
 // 加新行时：只往这个切片里加 id，并把对应记录的原始字节追加到 eventInfoActivityHex 末尾，
 // 两者条数必须一致（测试会断言）。
-var eventInfoActivityIDs = []uint16{331}
+// ⚠️ 1093（额外掉落奖励）**不走这张逐字切片表**：它需要一个 `calendar` 才有 HUD 图标，
+// 而官服那行（59 B）的 calendar 是空的 ⇒ 改由 event_info_activity_constructed.go 的
+// **构造行**承载（其余字段仍逐字沿用官服 1093 那行）。见 next200。
+// 685 是「奥拉蔻的装备模块研究」：**官服抓包里就有**（59 B，无载荷，与 1093 同族）。
+// 1093 那条带着 calendar（负责在活动列表里可见），685 这条按官服原样、只负责让面板的功能可用。
+var eventInfoActivityIDs = []uint16{331, 685}
 
 // eventInfoActivityHex 是 eventInfoActivityIDs 各条记录在官服抓包里的**原始字节逐字连接**，
 // 不含表头 count(2) 与尾部 0x00（那两个由 buildTownEventInfoTable 统一处理）。
@@ -64,12 +69,15 @@ const eventInfoActivityHex = "" +
 	"6620612054686f7573616e6420536561730000000000000000802b716a8eb8c4" +
 	"6a3a0000004c6976652f4576656e742f4b6f722f5c323032365c303332365f41" +
 	"7474656e64616e63654461696c794576656e742f63616c2e7875692f302f3000" +
-	"00000001"
+	"00000001" +
+	// 685：name="Oracle's Module Research!"、a/b=2/4、start=1785801600、end=1791277195、flag=0（59 B）。
+	"ad02010204190000004f7261636c652773204d6f64756c6520526573656172636821" +
+	"0000000000000000802b716a8bb8c46a000000000000000000"
 
 // eventInfoActivityTable 解码上表（只解一次）。
 var eventInfoActivityTable = mustHexDecode(eventInfoActivityHex)
 
-// activityEventInfoRows 返回本次要追加的活动行；开关关闭时返回 nil。
+// activityEventInfoRows 返回本次要追加的活动行（官方切片 + 构造行）；开关关闭时返回 nil。
 //
 // **在调用时读环境变量**（不是 init 期读一次）：这样测试可以用 t.Setenv 两个方向都覆盖，
 // 也让 profile 改值后重启即可生效。
@@ -78,5 +86,14 @@ func activityEventInfoRows() []byte {
 	case "off", "0", "false":
 		return nil
 	}
-	return eventInfoActivityTable
+	out := make([]byte, 0, len(eventInfoActivityTable)+64)
+	out = append(out, eventInfoActivityTable...)
+	out = append(out, constructedActivityEventRows()...)
+	return out
+}
+
+// activityEventInfoCount 是上面那些行的**条数**（表头 count 用）。
+// 必须与实际写进正文的行数一致：客户端按 count 读取，少数一行就丢最后一行。
+func activityEventInfoCount() uint16 {
+	return uint16(len(eventInfoActivityIDs) + len(constructedActivityEventIDs))
 }

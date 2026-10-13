@@ -2,18 +2,22 @@ package main
 
 import (
 	"context"
+	"dfolan/internal/aradpass"
 	"dfolan/internal/attendance"
 	"dfolan/internal/boostup"
 	"dfolan/internal/cashshop"
 	"dfolan/internal/catalog"
 	"dfolan/internal/character"
 	"dfolan/internal/database"
+	"dfolan/internal/extradrop"
 	"dfolan/internal/game/protocol"
 	"dfolan/internal/game/wire"
 	"dfolan/internal/gamedata"
+	"dfolan/internal/honeytime"
 	"dfolan/internal/inventory"
 	"dfolan/internal/legion"
 	"dfolan/internal/loot"
+	"dfolan/internal/oracleresearch"
 	"dfolan/internal/quest"
 	"dfolan/internal/reward"
 	"dfolan/internal/workflow"
@@ -44,13 +48,22 @@ type gatewayRuntime struct {
 	boosterCatalog        *BoosterCatalog
 	boostCatalog          *boostup.Catalog
 	attendanceCatalog     *attendance.Catalog
-	boostEventInfo        []byte
-	characters            *character.Service
-	channelDirectory      *catalog.ChannelDirectory
-	channelTowns          map[uint32]catalog.TownArea
-	channelGuides         map[uint32]uint32
-	azureFlip             *azureFlipConfig
-	channelInfo           *catalog.ChannelInfo
+	honeyTimeCatalog      *honeytime.Catalog
+	// extraDropCatalog 是活动 1093（额外掉落奖励）的原生目录；nil = 未装配。
+	extraDropCatalog *extradrop.Catalog
+	// oracle685Catalog 是活动 685（装备模块研究）的原生目录；nil = 未装配。
+	oracle685Catalog *oracleresearch.Catalog
+	// aradPassCatalog 是战令（阿拉德通行证）的源目录：等级表/奖励表/任务表全部
+	// 来自 PVF 里的 `newaradpassevent.evt`（见 internal/aradpass + gamedata）。
+	// nil = 该活动未装配，2209/2210 推送与 680 领奖都按「活动未开启」处理。
+	aradPassCatalog  *aradpass.Catalog
+	boostEventInfo   []byte
+	characters       *character.Service
+	channelDirectory *catalog.ChannelDirectory
+	channelTowns     map[uint32]catalog.TownArea
+	channelGuides    map[uint32]uint32
+	azureFlip        *azureFlipConfig
+	channelInfo      *catalog.ChannelInfo
 	// raidEntrances 是 PVF 解析的入口规则；巴卡尔状态由本地 legion 实现管理。
 	raidEntrances map[uint32]catalog.RaidEntrance
 	// channelSpawns 是各内容频道的专属城镇落点（见 prepareRuntime 的投影）。
@@ -114,6 +127,9 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 	if err := startup.validate(); err != nil {
 		return nil, nil, err
 	}
+	// ★ 把生效的 DFO_* 调试开关喊出来（见 debug_env.go 的事故记录）：
+	// 10-12 那次「修复不生效」就是一个遗留环境变量把真值整块盖掉造成的。
+	logDebugEnvAudit()
 	resources := new(runtimeCleanup)
 	defer func() {
 		if prepared == nil {
@@ -379,12 +395,23 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 	// 征兆队伍状态（noti 2836）的载荷。**在启动期校验**：以前这段在频道会话建立时
 	// （每个频道一次）才解析，写错一个字符就会在玩家"进频道"的那一刻 log.Fatalf，
 	// 现象是"启动游戏进不去频道"，而且加载日志已经刷完、错误行在最底下，极难定位。
-	omenInfoBytes, omenInfoErr := parseOmenInfo(startup.OmenInfo)
-	if omenInfoErr != nil {
-		return nil, nil, fmt.Errorf("bad -omen-info: %v", omenInfoErr)
-	}
-	if len(omenInfoBytes) > 0 {
-		log.Printf("omen info (noti 2836): injecting %d bytes: %s", len(omenInfoBytes), hex.EncodeToString(omenInfoBytes))
+	//
+	// `@文件` 是唯一例外：那个文件本来就是给人一边试一边改的，启动时不校验内容，
+	// 读不到或写坏了都在**每一次进本**那条路上自证并「这一场不发」，
+	// 既不挡启动也不把进本带走（见 omen_info.go 的 omenInfoTrialPayload）。
+	var omenInfoBytes []byte
+	if spec := strings.TrimSpace(startup.OmenInfo); strings.HasPrefix(spec, "@") {
+		omenInfoTrialSpec = spec
+		log.Printf("omen info (noti 2836): 每次进本重读试值文件 %s", strings.TrimPrefix(spec, "@"))
+	} else {
+		var omenInfoErr error
+		omenInfoBytes, omenInfoErr = parseOmenInfo(spec)
+		if omenInfoErr != nil {
+			return nil, nil, fmt.Errorf("bad -omen-info: %v", omenInfoErr)
+		}
+		if len(omenInfoBytes) > 0 {
+			log.Printf("omen info (noti 2836): injecting %d bytes: %s", len(omenInfoBytes), hex.EncodeToString(omenInfoBytes))
+		}
 	}
 	// 调律之边界的奖励通知（noti 2859）诊断注入。同样在启动期校验：
 	// 长度写错必须在这里就失败，而不是等到玩家进本那一刻。
@@ -1555,6 +1582,20 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 			log.Printf("warning: attunement rewards name %d box(es) this build cannot open; they will not be paid: %v", len(unopenable), unopenable)
 		}
 		lootService.Attunement = attunement
+		// 活动 1093「额外掉落奖励」：装配了目录才启用（源读失败时为 nil ⇒ 整段跳过）。
+		if pvfCatalogs.ExtraDrop != nil {
+			lootService.ExtraDrop = &loot.ExtraDropRewards{
+				Catalog: pvfCatalogs.ExtraDrop,
+				// ★ 固定掉落模式（业主 2026-10-13 定案）：**每局固定 10 个**，方便玩家刷取。
+				// 触发点是**深渊（调律/天平）结算那一步** —— 见 `loot.ExtraDropRewards.FixedPerRun`
+				// 与 `internal/loot/session.go` 里 `attunementPending` 的用法；
+				// 它是一段**独立于结算的附加处理**：不改动结算自己算出的奖励，只在结算已成的事实上追加。
+				// 官方口径是按装备稀有度给（Rare1/Unique2/Legendary3/Epic4/Primeval5，
+				// 出稀有度光柱时 5/10/15/20）—— 那条路已实现且保留。
+				// 数字与开关走 `DFO_EXTRADROP_FIXED`（未设 ⇒ 10；`off`/`0` ⇒ 切回稀有度表；N ⇒ 每局 N 个）。
+				FixedPerRun: extraDropFixedPerRun(),
+			}
+		}
 		lootService.RewardBoxes = boxes
 		lootService.InstantlyOpenBoxes = instantlyOpenBoxes
 		// 征兆系统（omen）：**默认生效**，无开关 —— 它是玩法本身。
@@ -1757,6 +1798,10 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 		boosterCatalog:        boosterCatalog,
 		boostCatalog:          boostCatalog,
 		attendanceCatalog:     pvfCatalogs.Attendance,
+		honeyTimeCatalog:      pvfCatalogs.HoneyTime,
+		extraDropCatalog:      pvfCatalogs.ExtraDrop,
+		oracle685Catalog:      pvfCatalogs.Oracle685,
+		aradPassCatalog:       pvfCatalogs.AradPass,
 		boostEventInfo:        boostEventInfo,
 		characters:            characters,
 		channelDirectory:      pvfCatalogs.ChannelDirectory,

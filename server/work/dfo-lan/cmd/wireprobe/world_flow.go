@@ -2,17 +2,21 @@ package main
 
 import (
 	"context"
+	"dfolan/internal/aradpass"
 	"dfolan/internal/attendance"
 	"dfolan/internal/boostup"
 	"dfolan/internal/catalog"
 	"dfolan/internal/character"
 	"dfolan/internal/database"
 	"dfolan/internal/dungeon"
+	"dfolan/internal/extradrop"
 	"dfolan/internal/game/protocol"
+	"dfolan/internal/honeytime"
 	"dfolan/internal/inventory"
 	"dfolan/internal/legion"
 	"dfolan/internal/loot"
 	"dfolan/internal/npcpresence"
+	"dfolan/internal/oracleresearch"
 	"dfolan/internal/quest"
 	"dfolan/internal/reward"
 	"dfolan/internal/workflow"
@@ -106,6 +110,18 @@ type worldSession struct {
 	boostAPCSelectionSent bool // native mode3 selection sent on this actor connection
 	// attendance 是每日签到（活动 331）的原生目录；nil = 源读取失败，签到推送与领取都按「活动未开启」处理。
 	attendance *attendance.Catalog
+	// honeyTime 是 HoneyTime（活动 313）的原生目录；nil = 源读取失败，1294 推送与 680 领奖都按「活动未开启」处理。
+	honeyTime *honeytime.Catalog
+	// extradrop 是活动 1093（额外掉落奖励）的目录；nil = 未装配（那一站整个跳过）。
+	extradrop *extradrop.Catalog
+	// oracle685 是活动 685（装备模块研究）的目录；nil = 未装配（生产那一站整个拒绝）。
+	oracle685 *oracleresearch.Catalog
+	// honeyTimeAnchor 是上次结算在线时长的时刻（登录时设、每次 tick 推进）。
+	// 活动 313 的在线秒数按 now-anchor 累计，见 honey_time_flow.go。
+	honeyTimeAnchor time.Time
+	// aradPass 是战令（阿拉德通行证，活动 516/10005）的原生目录；nil = 源读取失败，
+	// 2209/2210 推送与 680 领奖都按「活动未开启」处理。见 aradpass_flow.go。
+	aradPass *aradpass.Catalog
 	// boostWorldBase / boostOperations / notifyBoostMail 是 Starter Boost 活动
 	// 662 的注入接线：基地世界服务、一次性事件键会话与毕业邮件回调。
 	boostWorldBase  *world.Service
@@ -282,6 +298,18 @@ type worldSession struct {
 	// 于是「客户端显示的那一档」与「服务端发的这一件」永远是同一档。
 	// 零值 = 非调律副本或调用方没接线，掉落退回内部预掷。
 	attunementRunTiers loot.RunTiers
+	// attuneHiddenRun 是本会话**已经确认过「命运的凝械」**（CMD 2406）的那一场 RunID。
+	// 一件只落地一次：该件还没跟着掉落帧出去时，重复确认按「改主意」顶掉前一次
+	// （弹窗原文 "Reselecting will reset the selected Part and Set"）；已经掉出去了
+	// 就绝不能再记第二件，那才是一次确认掉两件的真风险。
+	attuneHiddenRun string
+	// borderSphereGrade 是本会话这一场**已经下发给客户端的球色档**（40..45，noti 2756
+	// 那一格）。球色报的是「本场最高的那一件」，而奖单会后进本再加入东西
+	// （命运的凝械），所以抬档时要知道现在报的是哪一档，见 raiseBorderSphereGrade。
+	borderSphereGrade uint32
+	// attuneGroundRun 是本会话**已经念过「实付 vs 落地」**的那一场 RunID（诊断行，
+	// 见 noteAttunementGroundDrops）：一场只念一次，源领主每次被确认死亡都再念会刷日志。
+	attuneGroundRun string
 	// omenReported 是本会话已经记过事件的征兆结算序号（见 noteOmenClear）。
 	omenReported uint64
 	// scaleRun 是上面两张表所归属的副本运行号。同一会话里重进副本会把 entity 从
@@ -715,6 +743,20 @@ func (w *worldSession) handle(id uint16, p []byte, send func(byte, uint16, []byt
 		next.X, next.Y = r.X, r.Y
 		// A movement report only stays inside the area the character is already
 		// in, so it uses the restoration gate rather than the entry gate.
+		if e = w.service.ValidateRestoredPosition(w.level, w.odyssey, next); e != nil {
+			return e
+		}
+	case 623:
+		// Motion reports are the position producer in personal town rooms:
+		// same seven-byte position prefix as CMD35 plus action fields the
+		// server does not own, so only the position segment is consumed.
+		r, e := protocol.DecodeUserStateMotionRequest(p)
+		if e != nil {
+			return e
+		}
+		w.lastMotion, w.lastSpeed = r.Motion, r.Speed
+		w.notePositionReport(event)
+		next.X, next.Y = r.X, r.Y
 		if e = w.service.ValidateRestoredPosition(w.level, w.odyssey, next); e != nil {
 			return e
 		}

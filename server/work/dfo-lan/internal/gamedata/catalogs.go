@@ -2,11 +2,15 @@ package gamedata
 
 import (
 	"dfolan/internal/adventure"
+	"dfolan/internal/aradpass"
 	"dfolan/internal/attendance"
 	"dfolan/internal/boostup"
 	"dfolan/internal/cashshop"
 	"dfolan/internal/catalog"
 	"dfolan/internal/character"
+	"dfolan/internal/extradrop"
+	"dfolan/internal/oracleresearch"
+	"dfolan/internal/honeytime"
 	"dfolan/internal/inventory"
 	"dfolan/internal/loot"
 	"encoding/hex"
@@ -65,6 +69,13 @@ type Catalogs struct {
 	Bakal                        *catalog.BakalRaidRules
 	BoostUp                      *boostup.Catalog
 	Attendance                   *attendance.Catalog
+	HoneyTime                    *honeytime.Catalog
+	// ExtraDrop 是活动 1093（额外掉落奖励）的原生目录；nil 的语义同 HoneyTime
+	// （见 catalogs_extradrop.go）。
+	ExtraDrop                    *extradrop.Catalog
+	// Oracle685 是活动 685「奥拉蔻的装备模块研究」的原生目录（生产/组装/分解）；nil 的语义同 HoneyTime。
+	Oracle685                    *oracleresearch.Catalog
+	AradPass                     *aradpass.Catalog
 	RaidEntrances                map[uint32]catalog.RaidEntrance
 	MazeRates                    *catalog.MazeChanceOverlay
 	HellMaps                     *catalog.SourceMapOverlay
@@ -107,6 +118,10 @@ type Catalogs struct {
 	// BoostUp 是活动 662（新手成长胶囊）的原生目录；nil = 该直读域未选中。
 	// Attendance 是活动 331（每日签到）的原生目录；nil = 源读取失败（只降级，不熔断，
 	// 见 catalogs_attendance.go）。
+	// HoneyTime 是活动 313（HoneyTime 每日在线奖励）的原生目录；nil 的语义同 Attendance
+	// （见 catalogs_honeytime.go）。
+	// AradPass 是战令（活动 516，阿拉德通行证）的原生目录；nil 的语义同上
+	// （见 catalogs_aradpass.go —— 只有"当前赛季那一份脚本"会被装配）。
 }
 
 type CatalogInputs struct {
@@ -578,6 +593,10 @@ func PrepareCatalogs(inputs CatalogInputs, adapters CatalogAdapters) (*Catalogs,
 		return &result, err
 	}
 	preparePVFAttendance(&result, source)
+	preparePVFHoneyTime(&result, source)
+	preparePVFExtraDrop(&result, source)
+	preparePVFOracle685(&result, source)
+	preparePVFAradPass(&result, source)
 	if err := preparePVFBoostUp(&result, source, selected, inputs); err != nil {
 		return &result, err
 	}

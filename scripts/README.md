@@ -8,7 +8,7 @@
 
 | 文件 | 作用 | 谁调用 |
 | --- | --- | --- |
-| `编译游戏.cmd` / `build-game.ps1` | 全量 build / vet / test 后分别构建并核对启动器与源码候选，备份旧文件后安装；保留默认服务端 | 双击 `编译游戏.cmd`；完成后手动运行 `scripts\启动游戏-SQLite.cmd --source-build` |
+| `编译游戏.cmd` / `build-game.ps1` | 按本机已安装 mod 生成临时 Go overlay，仓库加载器原文保持；全量 build / vet / test 后分别构建并核对启动器与源码候选，本机已有精锐专用启动器时同步重建，备份旧文件后安装；保留默认服务端 | 双击 `编译游戏.cmd`；完成后手动运行 `scripts\启动游戏-SQLite.cmd --source-build` |
 | `build-adventure-elite.ps1` | 构建 x64 `/MT` 精锐资格 DLL、执行机制测试并打包 schema 2；`-WithServer` 另构建隔离服务端/启动器，不启动游戏 | [资格候选说明](../client-patchs/adventure-elite/README.md)，[普通/剧情/奥德赛计划](../docs/todo/adventure-elite-ordinary-plan.md) |
 | `test-adventure-elite-launch.ps1` | 验证精确开关、丢失环境后的提权传递、Unicode 参数及引号值；仅运行临时 PowerShell 测试入口 | 开发验证，不启动服务端或游戏 |
 | `build-bot-client.ps1 -Survey` | 集中观察候选，仅构建与离线测试；帧/通知/阶段/清理/角色事件共用一轮，输出到忽略目录 `build/survey` | [集中清单](../docs/todo/bot-client-v1-research.md)，不启动游戏 |
@@ -29,6 +29,10 @@
 > **启动器内嵌的那一个**（`gm/` → `gmbridge.exe`，Go，见启动器仓库 README「GM 与存储档」）。
 > 本目录仍保留的 Python 只剩 `build_publish_zip.py`（打包，属另一条工作）；包外那份便携 Python
 > （`..\gm-tool\python`）仍被仓库根的 `build-publish.ps1` 用来打 zip，所以继续保留。
+
+`build-game.ps1` 的完整基础测试使用临时的干净 mod 加载器，保留“未安装 mod”的奖励基线；另行用已安装 mod 的加载器及实际启用名单核对声明与注册。两组测试都必须通过。全量 build/vet 和最终候选包含本机已安装 mod，生成物与 overlay 留在 `runtime/build-game/`，不改写或提交 `mods/zz_mods_gen.go`。
+
+mod 发现同时检查包目录中的非测试 Go 源码。仅剩 `.modkit-owner`、没有 `mod.json` 或 Go 源码的目录会明确提示并跳过，保留原目录；仍有 `mod.json` 却缺源码时报告安装不完整并停止构建。回归用 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-build-game-mods.ps1`，只操作临时夹具，不启动游戏。
 
 ### 写 `.cmd` 的硬要求（2026-10-05 实机踩坑后定）
 
@@ -144,6 +148,8 @@
 
 #### 停止环境时的 SQLite 管理租约（2026-10-05）
 
+- `停止游戏环境.cmd` 交给 `storage-route.ps1 stop-environment`，自动以管理员身份运行 Go 停止链，输出留在原窗口，并记录到 `server/work/dfo-lan/runtime/storage/entry-stop-environment.log`。停止后再次检查活动档对应的管理租约：持有进程已退出就清理，仍活着、无法查询或 pid 无效则保留并返回失败。Go 停止器报错时仍检查残留租约；不会删除数据库、WAL 或 SHM。
+- `停止游戏环境.cmd --dry-run` 只列停止计划，不提权、不清租约。离线回归：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-stop-environment.ps1`，不操作真实进程或存档。
 - 强杀服务端会留下 `<db>.admin-guard` 租约，60 秒 TTL 内新服务端会被拒（实机：
   「已有 GM 写入正在进行…由进程 13248 持有」）。**停止链自己收**：SQLite 档下
   `dfolauncher stop` 在强杀之后读租约里记录的 pid，

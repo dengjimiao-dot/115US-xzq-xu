@@ -9,6 +9,9 @@
     "branch": "master",
     "endpoint": "https://gitgud.io/yh9/115us-dfolauncher"
   },
+  "ui": {
+    "variant": "intuitive"
+  },
   "update": {
     "branch": "main",
     "channel": "dev",
