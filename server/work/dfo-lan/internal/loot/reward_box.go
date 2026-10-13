@@ -96,33 +96,7 @@ func OpenRewardBoxes(seed uint32, src RewardBoxSource, awards []Award) ([]Award,
 				// 一份包装只开一次，所以「×N 份包装」必须开 N 次。忽略 a.Amount 会让
 				// 它静默只发一份产物：小深渊 maze 1 的固定表发 10415192×2，就是这样
 				// 变成一份的（连名字都从结晶换成了它的产物）。
-				units := a.Amount
-				if units == 0 {
-					units = 1
-				}
-				for u := uint32(0); u < units; u++ {
-					for _, pool := range box.Pools {
-						for i := uint32(0); i < pool.draws(); i++ {
-							c, ok := pool.pick(&rng)
-							if !ok {
-								continue
-							}
-							// 源里的 `-1` 是「本次没有」：它占的是那份概率，
-							// 但抽中它**不发任何东西**。以前它被解析器过滤掉，
-							// 结果整池三元组错位、把 drawCount 当成模板发出去
-							// （实机地上出现复活币/金库升级道具/空面）。见
-							// internal/catalog/booster_import.go 的 boosterNumber。
-							if catalog.IsBoosterNoDrop(c.Template) {
-								continue
-							}
-							amount := c.Count
-							if amount == 0 {
-								amount = 1
-							}
-							next = append(next, Award{Template: c.Template, Amount: amount})
-						}
-					}
-				}
+				next = append(next, drawBoxAwards(&rng, box, a.Amount)...)
 				continue
 			}
 			if src.Container(a.Template) {
@@ -138,6 +112,57 @@ func OpenRewardBoxes(seed uint32, src RewardBoxSource, awards []Award) ([]Award,
 		level = next
 	}
 	return products, rng.Seed, skipped
+}
+
+func drawBoxAwards(rng *RNG, box RewardBox, units uint32) []Award {
+	if units == 0 {
+		units = 1
+	}
+	var out []Award
+	for u := uint32(0); u < units; u++ {
+		for _, pool := range box.Pools {
+			for i := uint32(0); i < pool.draws(); i++ {
+				c, ok := pool.pick(rng)
+				if !ok || catalog.IsBoosterNoDrop(c.Template) {
+					continue
+				}
+				amount := c.Count
+				if amount == 0 {
+					amount = 1
+				}
+				out = append(out, Award{Template: c.Template, Amount: amount})
+			}
+		}
+	}
+	return out
+}
+
+// Auction reward tables point at a pool wrapper. Open that table once to
+// select the displayed lot; its own box contents are a separate payout.
+// Both operations share the same source draw/count/no-drop implementation.
+func OpenRewardBoxesOnce(seed uint32, src RewardBoxSource, awards []Award) ([]Award, uint32, []string) {
+	if src == nil {
+		return awards, seed, nil
+	}
+	rng := RNG{seed}
+	var out []Award
+	var skipped []string
+	for _, a := range awards {
+		if box, ok := src.RewardBox(a.Template); ok {
+			out = append(out, drawBoxAwards(&rng, box, a.Amount)...)
+			continue
+		}
+		if src.Container(a.Template) {
+			skipped = append(skipped, fmt.Sprintf("unopenable_reward_pool_%d", a.Template))
+			continue
+		}
+		if !src.Item(a.Template) {
+			skipped = append(skipped, fmt.Sprintf("unknown_reward_pool_%d", a.Template))
+			continue
+		}
+		out = append(out, a)
+	}
+	return out, rng.Seed, skipped
 }
 
 // draws is the number of rolls one open takes from this pool. A source that

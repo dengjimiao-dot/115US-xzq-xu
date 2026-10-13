@@ -19,6 +19,21 @@ func (f fakeBoxes) RewardBox(t uint32) (RewardBox, bool) { b, ok := f.boxes[t]; 
 func (f fakeBoxes) Item(t uint32) bool                   { return f.items[t] }
 func (f fakeBoxes) Container(t uint32) bool              { return f.containers[t] }
 
+func TestOpenRewardBoxesOnceKeepsTheSelectedNestedBox(t *testing.T) {
+	src := fakeBoxes{boxes: map[uint32]RewardBox{
+		900: {Pools: []RewardBoxPool{{Draws: 1, Candidates: []RewardBoxCandidate{{Template: 901, Weight: 1, Count: 1}}}}},
+		901: {Pools: []RewardBoxPool{{Draws: 2, Candidates: []RewardBoxCandidate{{Template: 11, Weight: 1, Count: 5}}}}},
+	}, items: map[uint32]bool{11: true, 901: true}, containers: map[uint32]bool{900: true, 901: true}}
+	display, seed, skipped := OpenRewardBoxesOnce(7, src, []Award{{Template: 900, Amount: 2}})
+	if len(skipped) != 0 || len(display) != 2 || display[0].Template != 901 || display[1].Template != 901 {
+		t.Fatal("auction display unwrapped its prize", display, skipped)
+	}
+	products, _, skipped := OpenRewardBoxes(seed, src, []Award{display[0]})
+	if len(skipped) != 0 || len(products) != 2 || products[0].Template != 11 || products[0].Amount != 5 {
+		t.Fatal("display box payout lost source draws", products, skipped)
+	}
+}
+
 // TestOpenRewardBoxesPaysTheContentsAndNotTheWrapper is the whole point of the
 // step: the table pays wrappers, the player is owed what is inside them.
 func TestOpenRewardBoxesPaysTheContentsAndNotTheWrapper(t *testing.T) {

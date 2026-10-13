@@ -261,6 +261,15 @@ func RaidCreateSuccess(id uint32) []byte { return add32([]byte{1}, id) }
 // RaidLeaveSuccess answers CMD657; the trailing u8 is the normal/penalty flag.
 func RaidLeaveSuccess() []byte { return []byte{1, 0} }
 
+// N578 mode1 consumes only the owned raid ID and removes its cached record.
+// Hard official s37 exit at01:17:28:1a00140501000000 (remaining bytes padding).
+func RaidGone115(id uint32) ([]byte, error) {
+	if id == 0 {
+		return nil, fmt.Errorf("invalid removed raid identity")
+	}
+	return add32(add32(nil, id), 1), nil
+}
+
 // RaidRecruitmentList is NOTI577 with one record per entry. An empty vector is
 // a valid result for the pending query; records use the current-client layout.
 func RaidRecruitmentList(entries []RaidRecruitment) ([]byte, error) {

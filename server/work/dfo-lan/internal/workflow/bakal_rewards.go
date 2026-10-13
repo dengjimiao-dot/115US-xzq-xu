@@ -35,6 +35,9 @@
 // Normal rewards select one source-weighted row per party_card/squad_item
 // category from raidsystem/raidreward.etc. Preview items and monster-piece
 // rank references are not award pools. Bidding remains a separate pathway.
+// Owner policy2026-10-10 disables weekly consumption through
+// BakalUnlimitedWeeklyRuns. The reconstruction above documents historical
+// native behavior; current admission/UI and Freeze honor the owner policy.
 package workflow
 
 import (
@@ -82,6 +85,7 @@ type BakalRewardPlan struct {
 	Week     string                     `json:"week"`
 	Content  string                     `json:"content"`
 	Items    []catalog.BakalRewardEntry `json:"items"`
+	Cards    map[string][]loot.Award    `json:"cards,omitempty"`
 	Products []loot.Award               `json:"products"`
 	Eligible bool                       `json:"eligible"`
 }
@@ -163,7 +167,8 @@ func BakalRaidAdmission(rules *catalog.BakalRaidRules, role database.Character, 
 type BakalWeeklyCounters struct{ Clears, Rewards uint32 }
 
 // BakalWeeklyUsage projects the existing ledger for both admission and UI.
-// These are used counters, not remaining amounts. A new week is projected
+// The owner's no-consumption policy projects zero used counts for admission/UI,
+// while validating and preserving old ledgers. A new week is projected
 // without rewriting the character or its pending reward plans.
 func BakalWeeklyUsage(role database.Character, now time.Time) (BakalWeeklyCounters, error) {
 	var usage BakalWeeklyCounters
@@ -171,7 +176,7 @@ func BakalWeeklyUsage(role database.Character, now time.Time) (BakalWeeklyCounte
 	if err != nil {
 		return usage, err
 	}
-	if p.Week == bakalWeekOf(now) {
+	if !BakalUnlimitedWeeklyRuns && p.Week == bakalWeekOf(now) {
 		usage.Clears, usage.Rewards = p.Clears, p.Rewards
 	}
 	return usage, nil
@@ -200,6 +205,11 @@ type BakalRewardService struct {
 //
 // Event key: bakal-clear:<run> (model bakal-source-reward-v1).
 func (s *BakalRewardService) Freeze(ctx context.Context, role database.Character, run string, cleared int, now time.Time) (BakalRewardPlan, database.Character, error) {
+	return s.FreezeDifficulty(ctx, role, run, cleared, false, now)
+}
+
+// FreezeDifficulty binds the source reward pool to the owned run mode.
+func (s *BakalRewardService) FreezeDifficulty(ctx context.Context, role database.Character, run string, cleared int, hard bool, now time.Time) (BakalRewardPlan, database.Character, error) {
 	var plan BakalRewardPlan
 	if s == nil || s.Rules == nil || s.Store == nil || run == "" || role.ID == 0 {
 		// go:string.*+174460, 32 bytes
@@ -208,13 +218,20 @@ func (s *BakalRewardService) Freeze(ctx context.Context, role database.Character
 	// go:string.*+21789 (bakal-clear:) + run
 	saved, plan, err := commitEquipmentEvent(ctx, s.Store, role, "bakal-clear:"+run, bakalRewardModel,
 		func(current database.Character) (json.RawMessage, BakalRewardPlan, error) {
-			return s.freeze(current, run, cleared, now)
+			return s.freezeDifficulty(current, run, cleared, hard, now)
 		})
+	if err == nil && plan.Hard != hard {
+		return BakalRewardPlan{}, saved, fmt.Errorf("frozen Bakal reward difficulty mismatch")
+	}
 	return plan, saved, err
 }
 
 // freeze is the Freeze body, factored out for readability.
 func (s *BakalRewardService) freeze(current database.Character, run string, cleared int, now time.Time) (json.RawMessage, BakalRewardPlan, error) {
+	return s.freezeDifficulty(current, run, cleared, false, now)
+}
+
+func (s *BakalRewardService) freezeDifficulty(current database.Character, run string, cleared int, hard bool, now time.Time) (json.RawMessage, BakalRewardPlan, error) {
 	top, p, err := readBakalProgress(current.State)
 	if err != nil {
 		return nil, BakalRewardPlan{}, err
@@ -227,6 +244,7 @@ func (s *BakalRewardService) freeze(current database.Character, run string, clea
 		p.Week, p.Clears, p.Rewards = week, 0, 0
 	}
 	plan := BakalRewardPlan{
+		Hard:    hard,
 		Run:     run,
 		Source:  current.ConfigVersion, // save identity at freeze time
 		Week:    week,
@@ -234,22 +252,34 @@ func (s *BakalRewardService) freeze(current database.Character, run string, clea
 	}
 	rules := s.Rules
 	plan.Eligible = rules.MinimalDungeonClearCount <= cleared &&
-		(rules.WeeklyRewardLimit <= 0 || p.Rewards < uint32(rules.WeeklyRewardLimit))
+		(BakalUnlimitedWeeklyRuns || rules.WeeklyRewardLimit <= 0 || p.Rewards < uint32(rules.WeeklyRewardLimit))
 	if !plan.Eligible {
-		// The clear still counts toward the weekly clear limit.
-		p.Clears++
+		// Native consumption counts this clear; the owner policy leaves it untouched.
+		if !BakalUnlimitedWeeklyRuns {
+			p.Clears++
+		}
 		blob, err := saveBakalProgress(top, p)
 		return blob, plan, err
 	}
-	p.Rewards++ // reserve this week's reward slot (A-layer INCL at :156)
-	plan.Items, err = s.freezeItems()
+	if !BakalUnlimitedWeeklyRuns {
+		p.Rewards++ // reserve the native weekly slot only under consumption policy
+	}
+	plan.Items, err = s.freezeItemsDifficulty(hard)
 	if err != nil {
 		return nil, BakalRewardPlan{}, err
 	}
-	plan.Products, err = s.openProducts(plan.Items)
-	if err != nil {
-		return nil, BakalRewardPlan{}, err
+	// Freeze each category's resolved contents once; UI never reopens a box
+	// or redraws a plan merely to show the card later.
+	plan.Cards = map[string][]loot.Award{}
+	for _, item := range plan.Items {
+		products, e := s.openProducts([]catalog.BakalRewardEntry{item})
+		if e != nil {
+			return nil, BakalRewardPlan{}, e
+		}
+		plan.Cards[item.Category] = append(plan.Cards[item.Category], products...)
+		plan.Products = append(plan.Products, products...)
 	}
+
 	p.Plans[run] = plan
 	blob, err := saveBakalProgress(top, p)
 	return blob, plan, err
@@ -258,10 +288,19 @@ func (s *BakalRewardService) freeze(current database.Character, run string, clea
 // freezeItems walks the two reward rows bakal.etc declares, in the A-layer
 // category order (party_card then squad_item).
 func (s *BakalRewardService) freezeItems() ([]catalog.BakalRewardEntry, error) {
+	return s.freezeItemsDifficulty(false)
+}
+
+func (s *BakalRewardService) freezeItemsDifficulty(hard bool) ([]catalog.BakalRewardEntry, error) {
+	pool := s.Rules.Rewards
+	if hard {
+		pool = s.Rules.HardRewards
+	}
+
 	items := make([]catalog.BakalRewardEntry, 0, len(bakalRewardCategories))
 	for _, category := range bakalRewardCategories {
 		var total uint64
-		for _, row := range s.Rules.Rewards {
+		for _, row := range pool {
 			if row.Category == category {
 				total += uint64(row.Weight)
 			}
@@ -274,7 +313,7 @@ func (s *BakalRewardService) freezeItems() ([]catalog.BakalRewardEntry, error) {
 			return nil, err
 		}
 		roll := draw.Uint64()
-		for _, row := range s.Rules.Rewards {
+		for _, row := range pool {
 			if row.Category != category {
 				continue
 			}
@@ -423,6 +462,13 @@ func (s *BakalRewardService) Recover(ctx context.Context, role database.Characte
 			continue
 		}
 		role = saved
+	}
+	// Re-entering a character does not resume a lost solo auction. Restore
+	// only unfinished holds; completed sale receipts remain paid exactly once.
+	saved, releaseErr := s.ReleaseBiddingReservations(ctx, role, "")
+	role = saved
+	if releaseErr != nil {
+		errs = append(errs, releaseErr)
 	}
 	return role, errors.Join(errs...)
 }

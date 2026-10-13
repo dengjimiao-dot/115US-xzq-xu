@@ -43,15 +43,16 @@ import (
 // with other subsystems — dispatch must gate on active Bakal world state, the
 // id alone never identifies the packet.
 const (
-	CmdBakalCreateRaid   uint16 = 656  // create the raid party (waiting room)
-	CmdBakalRaidUpdate   uint16 = 657  // raid party update / leave (silent)
-	CmdBakalStartRaid    uint16 = 2089 // START_RAID — begin the vote/start flow
-	CmdBakalBattleReport uint16 = 2069 // kill / damage report from a combat room
-	CmdBakalScriptWarp   uint16 = 2070 // scripted warp inside the owned combat
-	CmdBakalLoadingDone  uint16 = 2073 // map load complete (0B)
-	CmdBakalCampReturn   uint16 = 2074 // native retreat to camp
-	CmdBakalGiveup       uint16 = 2261 // observed once pre-raid, 0B; refused upstream
-	CmdBakalFinalConfirm uint16 = 1134 // confirm the final-dungeon move
+	CmdBakalCreateRaid   uint16 = 656               // create the raid party (waiting room)
+	CmdBakalLeaveRaid    uint16 = 657               // LEAVE_RAID; distinct from C13 subparty leave
+	CmdBakalRaidUpdate   uint16 = CmdBakalLeaveRaid // legacy reconstruction alias
+	CmdBakalStartRaid    uint16 = 2089              // START_RAID — begin the vote/start flow
+	CmdBakalBattleReport uint16 = 2069              // kill / damage report from a combat room
+	CmdBakalScriptWarp   uint16 = 2070              // scripted warp inside the owned combat
+	CmdBakalLoadingDone  uint16 = 2073              // map load complete (0B)
+	CmdBakalCampReturn   uint16 = 2074              // native retreat to camp
+	CmdBakalGiveup       uint16 = 2261              // observed once pre-raid, 0B; refused upstream
+	CmdBakalFinalConfirm uint16 = 1134              // confirm the final-dungeon move
 )
 
 // S2C notification ids of the Bakal run. 574/581/572/584 are the shared RAID
@@ -393,13 +394,17 @@ type BakalPartyLocation struct {
 // bakalUnusedPartyLocation is the 25/0 filler of the N2285 table.
 const bakalUnusedPartyLocation = 25
 
+// The owned subparty published in the one-party N2285 table. N2288 activation
+// targets this wire party identity, not a zero-based member formation slot.
+const BakalOwnedPartyID byte = 1
+
 // BakalPartyFrame builds the N2285 party/room-location snapshot (173B): u8 1,
 // u8 1, u16 0, u8 0, u32 current location @5, u32 0, then exactly 20
 // (index, counter) pairs. The same shape serves the open burst, the per-room
 // location updates, the legal retreat and the settlement return-to-camp.
 func BakalPartyFrame(location uint32, entries []BakalPartyLocation) []byte {
 	p := make([]byte, 13, 173)
-	p[0], p[1] = 1, 1
+	p[0], p[1] = 1, BakalOwnedPartyID
 	binary.LittleEndian.PutUint32(p[5:], location)
 	for i := 0; i < 20; i++ {
 		var entry BakalPartyLocation
@@ -534,14 +539,31 @@ func BakalSourceSymbolFrame(symbol uint32, value int32) []byte {
 // zero. This is the Bakal body, not the generic area-select N27.
 func BakalFinalSelectionFrame() []byte { return make([]byte, 36) }
 
-// BakalClearResultFrame builds the N588 settlement result (10B): 00 00, u16
-// 610 (the Bakal content tag), u32 0, then the bytes 00 01.
-func BakalClearResultFrame() []byte {
-	p := make([]byte, 0, 10)
-	p = append(p, 0, 0)
-	p = binary.LittleEndian.AppendUint16(p, 610)
-	p = binary.LittleEndian.AppendUint32(p, 0)
-	return append(p, 0, 1)
+// BakalClearResultFrame retains the historical N588 ten-byte audit vector.
+// Historical audited vector:610 seconds. Runtime must supply its own duration.
+func BakalClearResultFrame() []byte { return BakalClearResultElapsedFrame(610) }
+
+// Native144ce4e00 consumes elapsed u32 at+2, followed by the member-clear
+// u16 and movie/result flags. Official20261009's successful run carries612,
+// not a fixed Bakal content identifier. Preserve the existing result variant.
+func BakalClearResultElapsedFrame(elapsed uint32) []byte {
+	p := make([]byte, 10)
+	binary.LittleEndian.PutUint32(p[2:], elapsed)
+	p[9] = 1
+	return p
+}
+
+// BakalFinalClearResultFrame uses the complete-capture final-result branch2.
+// Native144CE4E00 stores the byte8 result flag in the local result record.
+// The u16 result metric retains the compatibility zero: its gameplay meaning
+// has not been proved, so it is not filled with another player's sample2.
+func BakalFinalClearResultFrame(elapsed uint32, rewardPublished bool) []byte {
+	p := BakalClearResultElapsedFrame(elapsed)
+	p[0] = 2
+	if rewardPublished {
+		p[8] = 1
+	}
+	return p
 }
 
 // BakalAck builds the family's 1B success replies (N2089 start ack, N2073

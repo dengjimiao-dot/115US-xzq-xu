@@ -56,10 +56,12 @@ type BakalRaidRules struct {
 	BuffDefinitions        map[string]BakalBuffDefinition `json:"buff_definitions"`
 	RaidBuffCooldownMillis int                            `json:"raid_buff_cooldown_millis"`
 	Stage                  BakalStageRule
-	Symbols                map[string]uint32  `json:"symbols"`
-	DungeonCatalog         *DungeonCatalog    `json:"-"`
-	Rewards                []BakalRewardEntry `json:"rewards"`
-	RaidID                 int                `json:"raid_id"`
+	Symbols                map[string]uint32          `json:"symbols"`
+	EntryScenes            map[uint32]BakalEntryScene `json:"entry_scenes,omitempty"`
+	DungeonCatalog         *DungeonCatalog            `json:"-"`
+	HardRewards            []BakalRewardEntry         `json:"hard_rewards,omitempty"`
+	Rewards                []BakalRewardEntry         `json:"rewards"`
+	RaidID                 int                        `json:"raid_id"`
 
 	NormalPhase *BakalPhaseRules `json:"normal_phase"`
 	HardPhase   *BakalPhaseRules `json:"hard_phase"`
@@ -94,6 +96,11 @@ type BakalRankDeadCount struct {
 
 // BakalBiddingRules collects the auction tuning declared by bakal.etc.
 type BakalBiddingRules struct {
+	ItemsMax       int     `json:"items_max"`
+	StartMinPrice  uint32  `json:"start_min_price"`
+	GoldStep       uint32  `json:"gold_step"`
+	GoldMultiplier float64 `json:"gold_multiplier"`
+
 	StartDelaySecs   int                        `json:"start_delay_secs"`
 	BreakSecs        int                        `json:"break_secs"`
 	TimeSecs         int                        `json:"time_secs"`

@@ -92,6 +92,7 @@ type BakalOpening struct {
 	angerWindowApplied bool
 	dungeonEnteredAt   time.Time
 	settlementReady    bool
+	rewardPublished    bool
 	firstPhaseDefeated bool
 	secondPhase        bool
 	campReturnPending  bool
@@ -156,6 +157,11 @@ func PrepareBakalOpening(rules *catalog.BakalRaidRules, hard bool) (*BakalOpenin
 }
 
 // Stage reports the lifecycle stage.
+// HardMode is the mode selected when this owned run was prepared.
+func (o *BakalOpening) HardMode() bool { return o.hard }
+
+func (o *BakalOpening) NativeRuntime() bool { return o.runtime != nil }
+
 func (o *BakalOpening) Stage() BakalOpeningStage { return o.stage }
 
 func (o *BakalOpening) ActiveSince() time.Time { return o.readyAt }
@@ -350,21 +356,29 @@ func (o *BakalOpening) advanceAnger(now time.Time) {
 // resolved through the catalog type table. The caller supplies the raid-map
 // location the move lands on (decoded from the client's move/position
 // traffic upstream).
-func (o *BakalOpening) EnterDungeon(dungeon, location uint32, now time.Time) ([]BakalFrame, error) {
+// ValidateDungeonEntry checks raid admission without constructing a room or changing state.
+func (o *BakalOpening) ValidateDungeonEntry(dungeon uint32, now time.Time) error {
 	if o.Recovering(now) {
-		return nil, fmt.Errorf("Bakal recovery until %s", o.recoveryUntil.Format(time.RFC3339))
+		return fmt.Errorf("Bakal recovery until %s", o.recoveryUntil.Format(time.RFC3339))
 	}
 	if o.campReturnPending {
-		return nil, fmt.Errorf("Bakal camp return still pending")
+		return fmt.Errorf("Bakal camp return still pending")
 	}
 	if o.stage != BakalOpeningActive && !(o.stage == BakalOpeningFinal && dungeon == uint32(o.script.FinalClearDungeon)) {
-		return nil, fmt.Errorf("bakal enter dungeon from stage %d", o.stage)
+		return fmt.Errorf("bakal enter dungeon from stage %d", o.stage)
 	}
 	if !o.HasDungeon(dungeon) {
-		return nil, fmt.Errorf("bakal enter dungeon %d outside the opened list", dungeon)
+		return fmt.Errorf("bakal enter dungeon %d outside the opened list", dungeon)
 	}
 	if o.cleared[dungeon] {
-		return nil, fmt.Errorf("bakal dungeon %d already cleared", dungeon)
+		return fmt.Errorf("bakal dungeon %d already cleared", dungeon)
+	}
+	return nil
+}
+
+func (o *BakalOpening) EnterDungeon(dungeon, location uint32, now time.Time) ([]BakalFrame, error) {
+	if err := o.ValidateDungeonEntry(dungeon, now); err != nil {
+		return nil, err
 	}
 	if o.runtime != nil {
 		return o.eventEnter(dungeon, location, now)
@@ -608,6 +622,9 @@ func (o *BakalOpening) Remaining() uint32 {
 
 // SetRewardInventory splices the N13 reward inventory body into the settlement
 // burst (between the return-to-camp and the clear result, timeline 238).
+// SetRewardPublished is set only after the durable eligible plan was claimed.
+func (o *BakalOpening) SetRewardPublished(published bool) { o.rewardPublished = published }
+
 func (o *BakalOpening) SetRewardInventory(body []byte) {
 	o.rewardInventory = body
 	o.settlementReady = body != nil
@@ -640,11 +657,38 @@ func (o *BakalOpening) SymbolFrame(name string, value int32) []BakalFrame {
 
 // Source CLEAR PHASE can also be triggered by defeating the final actor.
 func (o *BakalOpening) ClearFinalDungeon(now time.Time) error {
-	if o.stage != BakalOpeningFinal || o.current != uint32(o.script.FinalClearDungeon) || !o.loaded[o.current] {
+	final := uint32(o.script.FinalClearDungeon)
+	if (o.stage == BakalOpeningFinal || o.stage == BakalOpeningEnded) && o.cleared[final] {
+		return nil // duplicate death/loading cannot repeat source completion
+	}
+	if o.stage != BakalOpeningFinal || o.current != final || !o.loaded[o.current] {
 		return fmt.Errorf("Bakal final clear outside owned loaded dungeon")
 	}
-	o.cleared[o.current] = true
-	o.settleAt = now
+	if o.runtime == nil {
+		o.cleared[final] = true
+		o.settleAt = now
+		return nil
+	}
+	c := o.eventClone()
+	c.cleared[final] = true
+	c.runtime.states[final] = "clear"
+	// Official s9 N5767/N5769 publishes this source dungeon's completion
+	// symbol after its owned actor dies. It is distinct from the boss HP.
+	name := fmt.Sprintf("[%d DGN HP]", final)
+	q := []bakalSignal{}
+	if err := c.setEventSymbol(name, 1, &q); err != nil {
+		return err
+	}
+	q = append(q, bakalSignal{op: "[ON CHANGE DUNGEON STATE]", id: final})
+	for _, signal := range q {
+		if err := c.dispatchEvent(signal, now); err != nil {
+			return err
+		}
+	}
+	// The source clear event requests a camp return. Durable rewards still
+	// have to be prepared by the gateway before Tick publishes settlement.
+	c.settleAt = now
+	*o = *c
 	return nil
 }
 
@@ -673,6 +717,11 @@ func (o *BakalOpening) BeginSecondPhase() error {
 }
 
 // Source symbol index and initial SET rows drive the client script getters.
+// FirstBakalEntry reads the source latch before ON ENTER consumes it.
+func (o *BakalOpening) FirstBakalEntry() bool {
+	return !o.secondPhase && o.symbolValues["[IS BAKAL FIRST ENTER]"] == 1
+}
+
 func (o *BakalOpening) SymbolsSnapshot() []BakalFrame {
 	values := map[uint32]int32{}
 	for name, value := range o.symbolValues {
@@ -765,8 +814,17 @@ func (o *BakalOpening) settle() []BakalFrame {
 	if o.rewardInventory != nil {
 		frames = append(frames, BakalFrame{"bakal_source_reward_inventory", 13, o.rewardInventory})
 	}
+	elapsed := uint32(max(0, o.settleAt.Sub(o.readyAt)/time.Second))
+	result := BakalClearResultElapsedFrame(elapsed)
+	state := []byte(BakalRaidStateEnded)
+	if o.runtime != nil {
+		// Complete official s9: final result2 precedes result-state3 (not idle0).
+		// N574 stage3 invokes the native raid result window using cached N588.
+		result = BakalFinalClearResultFrame(elapsed, o.rewardPublished)
+		state = []byte{3, 0}
+	}
 	return append(frames,
-		BakalFrame{"bakal_clear_result", NotiBakalClearResult, BakalClearResultFrame()},
-		BakalFrame{"bakal_script_phase_ended", NotiBakalRaidState, []byte(BakalRaidStateEnded)},
+		BakalFrame{"bakal_clear_result", NotiBakalClearResult, result},
+		BakalFrame{"bakal_script_phase_ended", NotiBakalRaidState, state},
 	)
 }

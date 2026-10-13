@@ -1204,6 +1204,9 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 		// next79 挂接（ispins_wiring.go）：N1719 保活 goroutine 与登录期
 		// N2254 分支（伊斯频道挂 pending、普通频道 1.1s 后推 N2254+781+782）。
 		client.ispinsPostSelection(role.ID)
+		if client.sendPlan(client.bakalPostCharacterInfo(), nil) != nil {
+			return dispatchClose
+		}
 		if client.worldState != nil {
 			// The newly selected character owns a fresh client quota cache.
 			client.worldState.bakalQuotaBody = nil

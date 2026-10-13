@@ -245,6 +245,21 @@ Go1.26.0 全量 build/vet、完整基础测试及已安装 mod 注册专项退�
 
 **两棵树尚未收敛（提交时必须一起处理，别悄悄分叉）**：`enabled.go` 的坏清单口径 + `live_test.go` 的重写用例自包含、可回灌开发树；`main.go` 的 `SetSourceGate` 接线**不能**回灌——开发树的 `internal/modpolicy` 没有这个 API（HEAD 零命中），回灌即编译失败；`gate_test.go`、`servermods_production_test.go` 只在运行树存在。本轮**未提交、未推送**（业主先前裁「先不提交」仍生效）。
 
+## 2026-10-11：巴卡尔基本战斗验收、合并保全与结算开窗候选
+
+### 已修复 / 已完成
+
+- 业主概括确认上一轮基本战斗正常；正确对比改动备份后，75个相关文件一致，合并遗漏的角色入场N1220与C16门禁已精确补回，保留远程增量。confirmed baseline同步。
+- 修复远程次元回廊测试的nil发送连接fixture，生产玩法不改；最终build/vet/full test及真实PVF巴卡尔六包专项通过。
+
+### 未修复 / 未闭环
+
+- 最终通关未出现结算窗口：候选改为原生最终N588及N574结算stage3、owned state3，保留持久化发奖门禁；新窗口尚未实机验收。奖励卡片明细/竞拍全流程及N588的u16度量字段仍需闭合，不标为完成。
+
+### bug 测试取证
+
+- 当前合并HEAD a3952da8；备份115-server-backup-20261011按files-modified/untracked审计。候选3c9638d7。详细源/原生证据、首次full test异步panic及修复后结果见`server/work/dfo-lan/docs/protocol/bakal-merge-and-result-review-20261011.md`。
+
 ## 2026-10-10 事件脚本奖励不再白给（结算/任务提交后回读入库态再编帧，已实机确认）
 
 **已修复 / 已完成**：业主 2026-10-10 确认「对的，全变了」。真源是时序，不是编码：Lua 事件脚本（`level_up`、`quest_complete`）里的 `grant_item` 与角色待遇是在业务事务**提交之后**才写库的，`reward.Notifier` 三个方法没有返回值、错误只记日志（`internal/reward/reward.go` 的 flush），于是提交交回网关的那份 `database.Character` 不含这批东西，而结算帧又全部由它编码 ⇒ 物品进了库、帧里没有、内存里也没有，玩家要等下一次全量背包（多半是重登）才认。新增 `cmd/wireprobe/reward_settlement_refresh.go`：结算与任务 `Finish` 之后回读库内那份角色（`WireID` 换回会话值），按**编码后的帧体**比较三类投影——普通背包（含金币那一行，金币就挂在 slot0/template0）、宠物/特殊容器、USERINFO1 待遇——变了才补发，且只用既有帧形（NOTI13 全量背包、NOTI13 宠物容器、城镇 `unlockRefresh` 三件套），零变化零帧；不比 state 原始字节，因为 `Characters` 走 `CharactersWithAdventure` 会把账号迷雾阶段投影进 state，比字节会场场误报。副本内一律不发 USERINFO1（客户端只在登录/选角/进本构造装备栏行对象，补发会清空装备栏显示，`dungeon_flow.go:1786`），改置 `slotUnlockDirty` 由 `leaveDungeon` 回城重建一次。接线 `settlement_flow.go`（通关提交后回读、plan 末尾补齐）与 `quest_flow.go`（原本只看回执的两道门各加 `rewardGranted.bag/.pet`、`.addition`）。回读或补帧失败只打日志，不把已通关、已完成卡在结算里；不发明未证实帧形、不留玩法开关、无 schema 变更、幂等口径不变。锚点：`server/work/dfo-lan/docs/current-evidence.md`（2026-10-10 一节）、实机会话 `…_20261010_190844_972934_next37`、现役程序 = 源码候选 `41272cdd`（31,084,032 字节，逐字节相同 ⇒ 本修复已在日常入口 `bin/wireprobe-pvf.exe` 上）。

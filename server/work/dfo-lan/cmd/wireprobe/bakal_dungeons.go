@@ -6,6 +6,7 @@ import (
 	"dfolan/internal/dungeon"
 	"dfolan/internal/game/protocol"
 	"dfolan/internal/legion"
+	"encoding/binary"
 	"fmt"
 	"maps"
 	"time"
@@ -17,6 +18,9 @@ import (
 func (w *worldSession) bakalDungeonEntry(id uint32, difficulty byte, grid *[2]byte, now time.Time, final bool) ([]outboundPacket, error) {
 	if w.bakal == nil || w.bakalRules == nil || w.bakalRules.DungeonCatalog == nil || w.role.ID == 0 {
 		return nil, fmt.Errorf("Bakal portal has no native map source")
+	}
+	if err := w.bakal.ValidateDungeonEntry(id, now); err != nil {
+		return nil, err
 	}
 	if !w.bakal.HasDungeon(id) {
 		return nil, fmt.Errorf("Bakal dungeon outside opening phase")
@@ -53,6 +57,13 @@ func (w *worldSession) bakalDungeonEntry(id uint32, difficulty byte, grid *[2]by
 		return nil, err
 	}
 	s.RaidManaged = true
+	// Capture the latch before EnterDungeon clears it.
+	if w.bakal.FirstBakalEntry() {
+		if scene, ok := w.bakalRules.EntryScenes[s.Room.Map]; ok {
+			s.EntrySceneMap = scene.InitialMap
+		}
+	}
+
 	location, err := w.bakalLocationForRoom(s)
 	if err != nil {
 		return nil, err
@@ -62,9 +73,34 @@ func (w *worldSession) bakalDungeonEntry(id uint32, difficulty byte, grid *[2]by
 	if err != nil {
 		return nil, err
 	}
+	if s.EntrySceneMap != 0 {
+		for i := range plan {
+			if plan[i].ID == 29 {
+				if len(plan[i].Payload) < 36 {
+					return nil, fmt.Errorf("short native entry map frame")
+				}
+				binary.LittleEndian.PutUint32(plan[i].Payload[32:36], s.EntrySceneMap)
+			}
+		}
+	}
 	frames, err := w.bakal.EnterDungeon(id, location, now)
 	if err != nil {
 		return nil, err
+	}
+	// Retail clears the first-enter symbol after N29 starts the intro scene.
+	// Keep other source events and timers in their existing ordering.
+	var sceneFlags []legion.BakalFrame
+	if s.EntrySceneMap != 0 {
+		symbol := w.bakalRules.Symbols["[IS BAKAL FIRST ENTER]"]
+		kept := frames[:0]
+		for _, f := range frames {
+			if f.ID == 570 && len(f.Body) == 9 && f.Body[0] == 1 && binary.LittleEndian.Uint32(f.Body[1:5]) == symbol && binary.LittleEndian.Uint32(f.Body[5:9]) == 0 {
+				sceneFlags = append(sceneFlags, f)
+			} else {
+				kept = append(kept, f)
+			}
+		}
+		frames = kept
 	}
 	// Keep the native raid party: generic solo-party initialization is excluded.
 	var filtered []outboundPacket
@@ -82,6 +118,18 @@ func (w *worldSession) bakalDungeonEntry(id uint32, difficulty byte, grid *[2]by
 	for i, p := range filtered {
 		if p.ID == 28 {
 			nativeSymbols := bakalOutgoing(w.bakal.SymbolsSnapshot())
+			if s.EntrySceneMap != 0 {
+				// Publish the pre-entry latch until the initial map exists;
+				// the queued ON ENTER zero follows N29 below.
+				key := w.bakalRules.Symbols["[IS BAKAL FIRST ENTER]"]
+				for j := range nativeSymbols {
+					p := nativeSymbols[j].Payload
+					if nativeSymbols[j].ID == 570 && len(p) == 9 && binary.LittleEndian.Uint32(p[1:5]) == key {
+						binary.LittleEndian.PutUint32(p[5:9], 1)
+					}
+				}
+			}
+
 			prefix := append(nativeSymbols, bakalOutgoing(frames[1:])...)
 			filtered = append(filtered[:i], append(prefix, filtered[i:]...)...)
 			break
@@ -99,7 +147,7 @@ func (w *worldSession) bakalDungeonEntry(id uint32, difficulty byte, grid *[2]by
 	w.selectingDungeon = false
 	w.approvedDungeonGate = 0
 	w.leaveScene()
-	return append(head, filtered...), nil
+	return append(append(head, filtered...), bakalOutgoing(sceneFlags)...), nil
 }
 
 func (w *worldSession) charactersChannel() [2]byte {

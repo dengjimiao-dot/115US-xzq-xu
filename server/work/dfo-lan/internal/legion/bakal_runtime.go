@@ -358,7 +358,13 @@ func (o *BakalOpening) executeEvent(ins catalog.BakalScriptInstruction, now time
 		if a[2].Value < 0 {
 			return fmt.Errorf("negative source timer")
 		}
-		o.runtime.timers[key] = now.Add(time.Duration(a[2].Value) * time.Second)
+		deadline := now.Add(time.Duration(a[2].Value) * time.Second)
+		body, err := BakalTimerFrame(key[0], key[1], deadline, uint32(a[2].Value))
+		if err != nil {
+			return err
+		}
+		o.runtime.timers[key] = deadline
+		o.runtime.frames = append(o.runtime.frames, BakalFrame{"bakal_source_timer", 583, body})
 	case "[CREATE MONSTER]":
 		return o.createEventMonster(n(0), a[1].Text, q)
 	case "[RESERVE CREATE MONSTER]", "[RESERVE DELETE MONSTER]":

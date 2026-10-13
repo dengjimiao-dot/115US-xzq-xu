@@ -28,6 +28,9 @@ type Session struct {
 	hellLastDeaths map[[2]uint16]uint16
 	Definition     catalog.DungeonDefinition
 	Maze           catalog.DungeonMaze
+	// EntrySceneMap presents Room.Map through its native initial phase scene.
+	// Actor ownership remains in the battle room.
+	EntrySceneMap  uint32
 	Room           catalog.DungeonRoom
 	Monsters       []protocol.DungeonMonster
 	Tournament     *TournamentRun
@@ -544,6 +547,7 @@ func (s *Session) adjacentLayerPending(c catalog.DungeonCatalog, target [2]byte)
 
 func (s *Session) enterRoom(c catalog.DungeonCatalog, room catalog.DungeonRoom) (*Session, error) {
 	next := *s
+	next.EntrySceneMap = 0
 	next.Room = room
 	next.Loaded = false
 	next.Visited = map[uint32][]protocol.DungeonMonster{}

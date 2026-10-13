@@ -489,6 +489,10 @@ func TestDimCloisterLoginSendsOwnLedgerNotIspins(t *testing.T) {
 // TestDimCloisterLoginFallsThroughForIspinsChannel 反向护栏：
 // 伊斯频道（81）仍走原来的分支（挂 pending，不在这里发账本）。
 func TestDimCloisterLoginFallsThroughForIspinsChannel(t *testing.T) {
+	// Post-selection schedules keepalive writes; even this no-write branch
+	// needs a real transport so its delayed callback cannot dereference nil.
+	server, peer := net.Pipe()
+	t.Cleanup(func() { server.Close(); peer.Close() })
 	c := &gameConnection{
 		gatewayRuntime:      &gatewayRuntime{},
 		bootstrapped:        true,
@@ -497,6 +501,7 @@ func TestDimCloisterLoginFallsThroughForIspinsChannel(t *testing.T) {
 		worldState:          &worldSession{channelType: 81, role: database.Character{ID: 7, WireID: 7}},
 		event:               func(map[string]any) {},
 	}
+	c.output = newConnectionOutput(server, c.keys, "test", c.event)
 	c.ispinsPostSelection(7)
 	if !c.worldState.pendingLegionEntryInfo {
 		t.Fatal("伊斯频道没有挂起 pending 账本")

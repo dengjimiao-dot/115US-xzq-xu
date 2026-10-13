@@ -3,7 +3,6 @@ package workflow
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -77,12 +76,10 @@ func TestBakalRaidAdmissionWeeklyGate(t *testing.T) {
 	}
 	sameWeek := json.RawMessage(`{"bakal_raid_rewards":{"week":"` + bakalWeekOf(now) + `","clears":1,"rewards":0,"plans":{}}}`)
 	err := BakalRaidAdmission(rules, database.Character{State: sameWeek}, now)
-	if !errors.Is(err, ErrBakalWeeklyClearLimit) {
-		t.Fatalf("exhausted week: %v", err)
+	if err != nil {
+		t.Fatalf("historical weekly count blocked owner policy: %v", err)
 	}
-	if err.Error() != "普通巴卡尔本周通关次数已用完" {
-		t.Fatalf("error text mutated: %q", err.Error())
-	}
+
 	// 2026-10-05 is a Monday; the raid week (UTC-9, aligned Tuesday 09:00) of
 	// that moment started 2026-09-29. Anything older is a different week.
 	stale := json.RawMessage(`{"bakal_raid_rewards":{"week":"2026-09-22T09:00:00Z","clears":9,"rewards":9,"plans":{}}}`)
@@ -101,8 +98,7 @@ func TestBakalRewardFreezeClaimRecover(t *testing.T) {
 	svc, store := bakalTestService(t, role)
 	ctx := context.Background()
 
-	// 1. A clear under the minimal dungeon count earns nothing but still
-	//    advances the weekly clear counter.
+	// 1. A clear under the source minimum earns nothing and consumes no quota.
 	plan, saved, err := svc.Freeze(ctx, store.role, "run-short", 2, now)
 	if err != nil || plan.Eligible {
 		t.Fatalf("short clear: plan=%+v err=%v", plan, err)
@@ -110,11 +106,11 @@ func TestBakalRewardFreezeClaimRecover(t *testing.T) {
 	if plan.Run != "run-short" || plan.Source != savecontract.Identity() || plan.Content != "contents/2022/bakalraid" || plan.Week != bakalWeekOf(now) {
 		t.Fatalf("plan identity: %+v", plan)
 	}
-	if err := BakalRaidAdmission(svc.Rules, saved, now); !errors.Is(err, ErrBakalWeeklyClearLimit) {
-		t.Fatalf("weekly clear limit must trip after the ineligible clear: %v", err)
+	if err := BakalRaidAdmission(svc.Rules, saved, now); err != nil {
+		t.Fatalf("ineligible clear consumed unlimited quota: %v", err)
 	}
 
-	// 2. A qualifying clear freezes an eligible plan and reserves the reward.
+	// 2. A qualifying clear freezes an eligible plan without consuming quota.
 	plan, saved, err = svc.Freeze(ctx, saved, "run-full", 3, now)
 	if err != nil || !plan.Eligible {
 		t.Fatalf("full clear: plan=%+v err=%v", plan, err)
@@ -147,11 +143,10 @@ func TestBakalRewardFreezeClaimRecover(t *testing.T) {
 	}
 	store.replay = false
 
-	// 4. The weekly reward slot was reserved at freeze: a second qualifying
-	//    clear the same week earns nothing and only burns a clear.
+	// 4. A different qualifying run can earn again without consuming quota.
 	plan, saved2, err := svc.Freeze(ctx, claimed, "run-second", 3, now)
-	if err != nil || plan.Eligible {
-		t.Fatalf("second clear must be rewardless: %+v err=%v", plan, err)
+	if err != nil || !plan.Eligible {
+		t.Fatalf("new run must retain source reward eligibility: %+v err=%v", plan, err)
 	}
 	_ = saved2
 
