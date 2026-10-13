@@ -102,3 +102,68 @@ Its fixed prefix and packed-stat length differ from US; only the ownership
 semantics are used here, not cross-region fixed offsets. Tests pin ordinary
 US row boundaries, actual worn restoration and bag-only/empty-slot cases.
 Compilation and packet tests do not establish client UI acceptance.
+
+## Ordinary worn rows reverted: cold-start auto-unequip (2026-10-13)
+
+Listing ordinary slots12..25 in the mode-1 snapshot made the client send a
+native unequip (CMD19 MOVE_ITEMSPACE) for the worn weapon on every cold start:
+source=(list0 bag, first empty slot, item0) destination=(list3 worn, slot12,
+item101040831), roughly 150-180ms after the login burst, and the server
+committed it (fame 82671 -> 69956, 30 worn items -> 29). Re-logging in the same
+client session did not repeat it; only a fresh process did.
+
+Cause isolation used one A/B pair with the same SQLite archive, the same
+character and the same launcher arguments, changing only the server binary:
+
+| binary | mode-1 rows | login CMD19 | fame at login |
+| --- | --- | --- | --- |
+| built 17:46 (slots12..25 included) | 30 | yes, 11:56:46.134Z | 82671 -> 69956 |
+| built 20:47 (slots12..25 omitted) | 30 | none | 82671, then only rises |
+
+Session logs: `runtime/roles_persist_..._20261013_195539_391972_next37` and
+`..._20261013_204936_054992_next37`.
+
+What this does NOT explain, and what was falsified on the way:
+
+- The quest auto-accept hypothesis is dead. In the passing session CMD31
+  (accept quest 3145) and CMD143 still fire exactly as before, `synopsis_read`
+  is still absent (NOTI2310 body stays 3 bytes), and yet no unequip follows.
+  The ~150ms gap after CMD143 was coincidence, not a chain.
+- Which cell of the ordinary row makes the client reject the worn object is
+  still unproven. The row currently carries slot/template/durability and zero
+  fixed-prefix cells, and the instance Record is ignored on non-avatar rows.
+
+Cost of this revert: the 2026-10-12 guide fix above is undone in code, so
+`playguide_5.co` was expected to see no item object on slot12 after the
+`1452C1540` final 48-slot pass deletes omitted worn objects.
+
+That expected cost did NOT appear on live 2026-10-13 21:46-21:48 (same session
+`..._204936_054992_next37`): with the weapon worn on slot12 the owner unequipped
+and re-equipped five items (slots 18, 12, 23, 14, 14 — five `change item`
+recomputations, every pair committed, fame 84199 -> 71484 -> 84199 on the weapon
+pair), and the alarm `[Equipment Missing] / No weapon is equipped.`
+(`string/clientonly.uv.str` key `playguide_05`, listed in
+`list/characterplayguidealarm.lst`) never showed. Independent corroboration from
+the same frames: the client itself filled `dst list3 slot12 item101040831` in
+its unequip packet, i.e. its worn model does hold a slot12 object with the right
+template. So MR !229's premise ("mode-1 omits ordinary rows => the client sees a
+worn weapon as an empty slot") is not observed on this build; what remains
+possible is only that the guide reads a different store through `+0x1F08`.
+Caveats before treating this as settled: one character, one observation, and the
+alarm rotation carries an 86400 interval, so a same-day alarm that had already
+been consumed would not re-show.
+
+Closure path (not needed until a guide symptom is actually observed): keep the
+ordinary rows and fill their instance cells so the client no longer reconciles
+them away. The 2026-10-13 live check above removed the only symptom that was
+ever claimed for the widened rows. The known-answer sample for the row shape is
+the GF115 capture20261006-165615 stream63/wire380 quoted above, which is not
+present on this machine as of 2026-10-13. The cap43 official capture is present,
+but its S2C USERINFO mode-1 body (conn1071 seq115, 6848 payload bytes) yields no
+readable slot/template row pairs, so it cannot serve as the oracle for this
+field set. Do not guess the cells in.
+
+Tests: `internal/character/detail_weapon_regression_test.go` and
+`detail_avatar_test.go` now pin the omission (count byte at payload offset 361,
+avatar135 + creature132 = 267 delta). `protocol.DetailedEquipment` still
+encodes and validates ordinary rows, which is where the closure work resumes.
