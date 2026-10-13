@@ -7,6 +7,7 @@ import (
 	"dfolan/internal/database"
 	"dfolan/internal/inventory"
 	"dfolan/internal/loot"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -19,8 +20,14 @@ const bakalBiddingKey = "bakal_bidding_plans"
 
 type BakalBiddingLot struct {
 	Award loot.Award `json:"award"`
-	Sold  bool       `json:"sold"`
-	Price uint32     `json:"price"`
+	// Display the source lot; resolve its payout once, without turning a box's
+	// multiple products into multiple independently purchased auction rounds.
+	Products []loot.Award `json:"products,omitempty"`
+	Sold     bool         `json:"sold"`
+	Price    uint32       `json:"price"`
+	Reserved bool         `json:"reserved,omitempty"`
+	Closed   bool         `json:"closed,omitempty"`
+	Released bool         `json:"released,omitempty"`
 }
 type BakalBiddingPlan struct {
 	Run     string            `json:"run"`
@@ -177,16 +184,28 @@ func (s *BakalRewardService) FreezeBidding(ctx context.Context, role database.Ch
 		if e != nil {
 			return nil, BakalBiddingPlan{}, e
 		}
-		products, e := s.openProducts(items)
-		if e != nil {
-			return nil, BakalBiddingPlan{}, e
-		}
 		plan := BakalBiddingPlan{Run: run, Source: current.ConfigVersion, Content: s.Content, Hard: hard, ReadyAt: now.Add(time.Duration(s.Rules.Bidding.StartDelaySecs) * time.Second)}
-		for _, product := range products {
-			if product.Template == 0 || product.Amount == 0 {
+		var sourceAwards []loot.Award
+		for _, item := range items {
+			sourceAwards = append(sourceAwards, loot.Award{Template: item.Template, Amount: item.Amount})
+		}
+		var entropy [4]byte
+		if _, e := cryptorand.Read(entropy[:]); e != nil {
+			return nil, plan, e
+		}
+		lots, _, skipped := loot.OpenRewardBoxesOnce(binary.LittleEndian.Uint32(entropy[:]), s.Loot.RewardBoxes, sourceAwards)
+		if len(skipped) != 0 {
+			return nil, plan, fmt.Errorf("unbound bidding pool: %v", skipped)
+		}
+		for _, item := range lots {
+			if item.Template == 0 || item.Amount == 0 {
 				return nil, plan, fmt.Errorf("invalid bidding product")
 			}
-			plan.Lots = append(plan.Lots, BakalBiddingLot{Award: product})
+			products, e := s.openProducts([]catalog.BakalRewardEntry{{Template: item.Template, Amount: item.Amount}})
+			if e != nil {
+				return nil, plan, e
+			}
+			plan.Lots = append(plan.Lots, BakalBiddingLot{Award: loot.Award{Template: item.Template, Amount: item.Amount}, Products: products})
 		}
 		plans[run] = plan
 		state, e := saveBakalBidding(top, plans)
@@ -227,31 +246,45 @@ func (s *BakalRewardService) PurchaseBiddingLot(ctx context.Context, role databa
 			return nil, BakalBiddingLot{}, fmt.Errorf("bidding lot unavailable")
 		}
 		row := plan.Lots[lot]
+		if _, ok := s.Loot.Catalog.Items[row.Award.Template]; !ok || row.Award.Amount == 0 {
+			return nil, row, fmt.Errorf("invalid frozen bidding display item")
+		}
 		if row.Sold {
 			return nil, row, fmt.Errorf("bidding lot already sold")
+		}
+		if row.Closed || row.Released || row.Reserved && row.Price != price {
+			return nil, row, fmt.Errorf("bidding lot closed or reservation conflict")
 		}
 		bag, e := inventory.ReadBag(current.State)
 		if e != nil {
 			return nil, row, e
 		}
-		if bag.Gold < price {
+		if !row.Reserved && bag.Gold < price {
 			return nil, row, fmt.Errorf("insufficient bidding gold")
 		}
-		bag.Gold -= price
+		if !row.Reserved {
+			bag.Gold -= price
+		}
 		state, e := inventory.SaveBag(current.State, bag)
 		if e != nil {
 			return nil, row, e
 		}
 		awarder := inventory.Awarder{Catalog: s.Loot.Catalog, Rules: s.Loot.BagRules, Equipment: s.Loot.Equipment}
-		state, _, e = awarder.Grant(state, row.Award.Template, row.Award.Amount)
-		if e != nil {
-			return nil, row, e
+		products := row.Products
+		if products == nil {
+			products = []loot.Award{row.Award}
+		} // old persisted lots
+		for _, product := range products {
+			state, _, e = awarder.Grant(state, product.Template, product.Amount)
+			if e != nil {
+				return nil, row, e
+			}
 		}
 		top, _, e = readBakalBidding(state)
 		if e != nil {
 			return nil, row, e
 		}
-		row.Sold, row.Price = true, price
+		row.Sold, row.Price, row.Reserved, row.Closed = true, price, false, true
 		plan.Lots[lot] = row
 		plans[run] = plan
 		state, e = saveBakalBidding(top, plans)

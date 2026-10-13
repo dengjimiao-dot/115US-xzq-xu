@@ -7,6 +7,17 @@ import (
 	"testing"
 )
 
+func TestRaidGone115OfficialHardExit(t *testing.T) {
+	want, _ := hex.DecodeString("1a00140501000000")
+	got, e := RaidGone115(0x0514001a)
+	if e != nil || !bytes.Equal(got, want) {
+		t.Fatalf("raid deletion %x %v", got, e)
+	}
+	if _, e = RaidGone115(0); e == nil {
+		t.Fatal("removed unowned zero raid")
+	}
+}
+
 func TestRaidEntrance115CapturedCreateAndOwnedRecord(t *testing.T) {
 	request, _ := hex.DecodeString("08010000003100000007000000000000")
 	r, err := DecodeRaidCreateRequest(request)

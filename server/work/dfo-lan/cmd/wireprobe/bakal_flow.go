@@ -10,6 +10,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -63,7 +64,15 @@ func (client *gameConnection) dispatchBakal(requestData *clientRequest) dispatch
 			}
 		}
 	}
-	handled, packets, err := client.handleBakalRequest(requestData.frame.ID, requestData.plaintext, now)
+	var handled bool
+	var packets []outboundPacket
+	var err error
+	if requestData.frame.ID == 1902 {
+		key := fmt.Sprintf("%x", sha256.Sum256(requestData.frame.Raw))
+		handled, packets, err = client.bakalBid(requestData.plaintext, now, key)
+	} else {
+		handled, packets, err = client.handleBakalRequest(requestData.frame.ID, requestData.plaintext, now)
+	}
 	if !handled {
 		return dispatchNext
 	}
@@ -95,12 +104,12 @@ func (client *gameConnection) dispatchBakal(requestData *clientRequest) dispatch
 func (client *gameConnection) handleBakalRequest(id uint16, p []byte, now time.Time) (bool, []outboundPacket, error) {
 	w := client.worldState
 	switch id {
+	case 1902:
+		return client.bakalBid(p, now, "")
 	case legion.CmdBakalCreateRaid:
 		return client.bakalCreateRaid(p, now)
-	case legion.CmdBakalRaidUpdate:
-		// c2s 657 (8B) — 成功实录里等待期出现过一次；语义不透明，仅记录。
-		client.event(map[string]any{"kind": "bakal_raid_update", "raid": w.bakalRun})
-		return true, nil, nil
+	case legion.CmdBakalLeaveRaid:
+		return client.bakalLeaveRaid(p, now)
 	case 1353:
 		return client.bakalOwnedInfo(p)
 	case 661:
@@ -245,6 +254,9 @@ func (client *gameConnection) bakalCreateRaid(p []byte, now time.Time) (bool, []
 	if w.bakal != nil && w.bakal.Stage() != legion.BakalOpeningEnded && w.bakal.Stage() != legion.BakalOpeningFailed {
 		return true, nil, fmt.Errorf("character already owns a raid")
 	}
+	if w.bakalAuction != nil && w.bakalRewardUI != nil && w.bakalRewardUI.stage != 11 {
+		return true, nil, fmt.Errorf("finish or leave the owned auction before creating a raid")
+	}
 	if request.Kind != byte(w.bakalRules.RaidID) {
 		return true, nil, fmt.Errorf("Bakal create request does not match source raid kind")
 	}
@@ -253,7 +265,11 @@ func (client *gameConnection) bakalCreateRaid(p []byte, now time.Time) (bool, []
 			return true, nil, err
 		}
 	}
-	opening, err := legion.PrepareBakalOpening(w.bakalRules, false)
+	hard, err := protocol.BakalHardMode(request)
+	if err != nil {
+		return true, nil, err
+	}
+	opening, err := legion.PrepareBakalOpening(w.bakalRules, hard)
 	if err != nil {
 		return true, nil, err
 	}
@@ -283,6 +299,10 @@ func (client *gameConnection) bakalCreateRaid(p []byte, now time.Time) (bool, []
 	w.bakal = opening
 	w.bakalRecruitment = &recruitment
 	w.bakalRun = fmt.Sprintf("bakal-%d", now.UnixNano())
+	w.bakalRewardUI = nil
+	w.bakalRewardUIError = nil
+	w.bakalAuction = nil
+	w.bakalAuctionError = nil
 	w.bakalName = w.role.Name
 	client.event(map[string]any{"kind": "raid_created_waiting", "raid": "bakal", "raid_id": w.bakalRun,
 		"name": request.Title, "wire_team_id": teamID, "channel_type": legion.BakalChannelType, "town": w.state.Position.Town, "area": w.state.Position.Area})
@@ -357,7 +377,7 @@ func (client *gameConnection) bakalStartRaid(p []byte, now time.Time) (bool, []o
 	// Failure ends the run, not membership. Retrying resets source state
 	// and ledger identity while retaining the native leader and formation.
 	if w.bakal.Stage() == legion.BakalOpeningFailed {
-		opening, err := legion.PrepareBakalOpening(w.bakalRules, false)
+		opening, err := legion.PrepareBakalOpening(w.bakalRules, w.bakal.HardMode())
 		if err != nil {
 			return true, nil, err
 		}
@@ -443,7 +463,10 @@ func (client *gameConnection) bakalStandbyPartyCreate(p []byte) (bool, []outboun
 // its later six CMD13 samples were unimplemented, not reward confirmations.
 func (client *gameConnection) bakalRewardClaimOrLeave(p []byte, now time.Time) (bool, []outboundPacket, error) {
 	w := client.worldState
-	if w.bakal == nil || w.bakalRewards == nil {
+	if w.bakal == nil {
+		if !w.soloPartyReady {
+			return true, []outboundPacket{{"bakal_subparty_already_gone", 1, 13, []byte{0, 18, 0}}}, nil
+		}
 		return false, nil, nil
 	}
 	switch w.bakal.Stage() {
@@ -451,16 +474,72 @@ func (client *gameConnection) bakalRewardClaimOrLeave(p []byte, now time.Time) (
 		if len(p) != 8 {
 			return true, nil, fmt.Errorf("bakal leave payload %d bytes, want 8", len(p))
 		}
+		refund, err := w.releaseBakalAuction()
+		if err != nil {
+			return true, nil, err
+		}
 		w.soloPartyReady = false
-		w.bakal = nil
-		w.bakalRecruitment = nil
-		w.bakalRun = ""
+		// C13 removes the subparty, not the attack-team cache. The actual
+		// C657 exit and N578mode1 below own that lifecycle.
+		var updates []outboundPacket
+		if w.bakalRecruitment != nil {
+			next := *w.bakalRecruitment
+			next.MemberPosition = 0
+			owned, e := protocol.RaidOwnedDetails(next)
+			if e != nil {
+				return true, nil, e
+			}
+			binary.LittleEndian.PutUint32(owned[4:], 2)
+			member, e := protocol.RaidAssignmentUpdate(next)
+			if e != nil {
+				return true, nil, e
+			}
+			updates = append(updates, outboundPacket{"bakal_subparty_owned_refresh", 0, 578, owned}, outboundPacket{"bakal_subparty_member_refresh", 0, 578, member})
+			*w.bakalRecruitment = next
+		}
 		packets := []outboundPacket{
 			{"bakal_party_gone", 0, 9, protocol.BlackPurgatoryPartyGone(w.characters.ChannelContext)},
 		}
-		return true, packets, nil
+		return true, append(append(refund, updates...), packets...), nil
 	}
 	return true, nil, fmt.Errorf("bakal reward claim outside settled raid")
+}
+
+// C657 is LEAVE_RAID. C13 is only LEAVE_PARTY. Preserve that distinction
+// so the attack-team window receives both its ACK and its cache-removal notice.
+func (client *gameConnection) bakalLeaveRaid(p []byte, now time.Time) (bool, []outboundPacket, error) {
+	w := client.worldState
+	actor, err := protocol.DecodeRaidLeaveRequest(p)
+	if err != nil {
+		return true, nil, err
+	}
+	if w.bakal == nil || w.bakalRecruitment == nil || actor != w.role.WireID {
+		return true, []outboundPacket{{"bakal_raid_leave_refused", 1, 657, []byte{0, 19, 0}}}, nil
+	}
+	if w.bakal.Stage() != legion.BakalOpeningIdle && w.bakal.Stage() != legion.BakalOpeningEnded && w.bakal.Stage() != legion.BakalOpeningFailed {
+		return true, nil, fmt.Errorf("raid leave requires owned waiting or finished run")
+	}
+	gone, err := protocol.RaidGone115(w.bakalRecruitment.ID)
+	if err != nil {
+		return true, nil, err
+	}
+	refund, err := w.releaseBakalAuction()
+	if err != nil {
+		return true, nil, err
+	}
+	if w.soloPartyReady && w.characters != nil {
+		refund = append(refund, outboundPacket{"bakal_raid_subparty_gone", 0, 9, protocol.BlackPurgatoryPartyGone(w.characters.ChannelContext)})
+	}
+	run := w.bakalRun
+	w.bakal = nil
+	w.bakalRecruitment = nil
+	w.bakalRun = ""
+	w.bakalRewardUI = nil
+	w.bakalRewardUIError = nil
+	w.bakalAuctionError = nil
+	w.soloPartyReady = false
+	client.event(map[string]any{"kind": "bakal_raid_left", "raid": run, "actor": actor})
+	return true, append(refund, outboundPacket{"bakal_raid_leave_ack", 1, 657, protocol.RaidLeaveSuccess()}, outboundPacket{"bakal_raid_cache_removed", 0, 578, gone}), nil
 }
 
 // bakalBattleReport is CMD2069: the client's kill report for a boss room.
@@ -812,8 +891,20 @@ func (client *gameConnection) tickBakalOpening(now time.Time) error {
 			client.event(map[string]any{"kind": "bakal_settlement_pending", "raid": w.bakalRun, "error": err.Error()})
 			return nil
 		}
+		if w.bakalRewardUIError != nil {
+			client.event(map[string]any{"kind": "bakal_reward_presentation_unbound", "raid": w.bakalRun, "error": w.bakalRewardUIError.Error()})
+		}
+		if w.bakalAuctionError != nil {
+			client.event(map[string]any{"kind": "bakal_auction_preparation_unbound", "raid": w.bakalRun, "error": w.bakalAuctionError.Error()})
+		}
 	}
 	frames := w.bakal.Tick(now)
+	frames = append(frames, w.tickBakalRewardUI(now)...)
+	auctionPlan, auctionErr := w.tickBakalAuction(now)
+	if auctionErr != nil {
+		client.event(map[string]any{"kind": "bakal_auction_settlement_pending", "raid": w.bakalRun, "error": auctionErr.Error()})
+		return nil
+	}
 	if err := w.bakal.EventError(); err != nil {
 		client.event(map[string]any{"kind": "bakal_source_event_pending", "raid": w.bakalRun, "error": err.Error()})
 		return nil
@@ -869,10 +960,10 @@ func (client *gameConnection) tickBakalOpening(now time.Time) error {
 	for _, p := range lifecycle {
 		frames = append(frames, legion.BakalFrame{Name: p.Name, ID: p.ID, Body: p.Payload})
 	}
-	if len(frames) == 0 && len(deathPlan) == 0 {
+	if len(frames) == 0 && len(deathPlan) == 0 && len(auctionPlan) == 0 {
 		return nil
 	}
-	if err := client.sendPlan(append(append(camp, bakalOutgoing(frames)...), deathPlan...), client.logWorldResponseBody); err != nil {
+	if err := client.sendPlan(append(append(append(camp, bakalOutgoing(frames)...), auctionPlan...), deathPlan...), client.logWorldResponseBody); err != nil {
 		client.event(map[string]any{"kind": "bakal_tick_write_failed", "error": err.Error()})
 		return err
 	}
@@ -921,12 +1012,22 @@ func (w *worldSession) bakalSettleSplice(now time.Time) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	wireID := w.role.WireID
-	plan, saved, err := w.bakalRewards.Freeze(ctx, w.role, w.bakalRun, id.ClearedCount, now)
+	plan, saved, err := w.bakalRewards.FreezeDifficulty(ctx, w.role, w.bakalRun, id.ClearedCount, id.Hard, now)
 	if err != nil {
 		return err
 	}
 	saved.WireID = wireID
 	w.role = saved
+	var ui *bakalRewardUI
+	if w.bakalRewardUI == nil {
+		ui, err = w.prepareBakalRewardUI(plan, now)
+		if err != nil {
+			// An unsupported preview must never prevent the already owed
+			// durable payout. Keep the existing result path and report the gap.
+			w.bakalRewardUIError = err
+			ui = nil
+		}
+	}
 	// Handover raid_bakal_rewards.go:31/39/47: Freeze -> Claim -> Bootstrap.
 	if plan.Eligible {
 		_, saved, err = w.bakalRewards.Claim(ctx, w.role, w.bakalRun, now)
@@ -942,6 +1043,12 @@ func (w *worldSession) bakalSettleSplice(now time.Time) error {
 	}
 	w.bakal.SetRewardInventory(body)
 	w.bakal.SetRewardPublished(plan.Eligible)
+	if ui != nil {
+		w.bakalRewardUI = ui
+	}
+	if err := w.prepareBakalAuction(ctx, plan, now); err != nil {
+		w.bakalAuctionError = err
+	}
 	return nil
 }
 
