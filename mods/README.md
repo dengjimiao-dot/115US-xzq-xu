@@ -6,7 +6,7 @@ mod 的地方"已过时）：
 1. **Lua 奖励规则脚本的第一顺位目录**：平铺的 `*.lua`（本目录根的 `newchar_kit.lua` 就是）
    会在服务端启动时被读进奖励管线 —— 见 [`MOD-DEVELOPMENT.md`](MOD-DEVELOPMENT.md) §4.5.4；
 2. **启动器「MOD 工具」页显示的 mod 库根**（装/卸、批量操作都以它为根）；
-3. **mod 作者的工作区**：示例源码与两份文档（`examples/`、`newchar-kit/`、`MOD-*.md`）。
+3. **mod 作者的工作区**：示例源码与两份文档（`.examples/`、`newchar-kit/`、`MOD-*.md`）。
 
 > 真正"被编译进服务端"的 Go 源码 mod 不在本目录，而在**服务端模块**的 `mods/`
 > （`server/work/dfo-lan/mods/`）—— 两者别混。
@@ -70,7 +70,7 @@ $mod = "<某个 mod 的 zip>"
 
 ## 示例
 
-### `examples/hello-verify/` —— 四层结构的可验证样例
+### `.examples/hello-verify/` —— 四层结构的可验证样例
 
 演示 server / pvf / client / resource 四层怎么组织，以及"装上去能证明它生效"的最小闭环：
 
@@ -85,7 +85,7 @@ build-mod.py           打包：算 size/sha256 → 生成 mod.json → 打包 �
 build-mod.cmd          ASCII 启动器（自动找 Python）
 ```
 
-### `examples/giveaway-random-equipment/` —— 事件奖励（"发东西"）
+### `.examples/giveaway-random-equipment/` —— 事件奖励（"发东西"）
 
 演示怎么往服务端的**事件奖励管线**里追加一条规则（新角色创建时触发），
 而不是自己写一条发放路径：
@@ -143,7 +143,7 @@ README.md                             发什么、职业怎么判、装/卸、�
 每个示例自带 `build-mod.py`（逻辑）+ `build-mod.cmd`（ASCII 启动器）：
 
 ```powershell
-cd mods\examples\hello-verify
+cd mods\.examples\hello-verify
 .\build-mod.cmd                      # 输出到 .\dist\
 python build-mod.py --modkit <modkit.exe>   # 顺便自证 verify
 ```
