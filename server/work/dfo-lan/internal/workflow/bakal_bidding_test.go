@@ -5,6 +5,7 @@ import (
 	"dfolan/internal/catalog"
 	"dfolan/internal/database"
 	"dfolan/internal/inventory"
+	"dfolan/internal/loot"
 	"dfolan/internal/savecontract"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,44 @@ type biddingEventFake struct {
 	role     database.Character
 	receipts map[string]json.RawMessage
 	writes   int
+}
+
+type bakalAuctionBox struct{}
+
+func (bakalAuctionBox) Item(id uint32) bool      { return id == 1000 || id == 999 || id == 10418036 }
+func (bakalAuctionBox) Container(id uint32) bool { return id == 999 || id == 1000 }
+func (bakalAuctionBox) RewardBox(id uint32) (loot.RewardBox, bool) {
+	if id == 1000 {
+		return loot.RewardBox{Pools: []loot.RewardBoxPool{{Draws: 1, Candidates: []loot.RewardBoxCandidate{{Template: 999, Weight: 1, Count: 1}}}}}, true
+	}
+	if id != 999 {
+		return loot.RewardBox{}, false
+	}
+	return loot.RewardBox{Pools: []loot.RewardBoxPool{
+		{Draws: 1, Candidates: []loot.RewardBoxCandidate{{Template: 10418036, Weight: 1, Count: 2}}},
+		{Draws: 1, Candidates: []loot.RewardBoxCandidate{{Template: 10418036, Weight: 1, Count: 3}}},
+	}}, true
+}
+
+func TestBakalAuctionBoxRemainsOneLotAndPaysAllProducts(t *testing.T) {
+	s, store, at := biddingFixture(t)
+	s.Loot.RewardBoxes = bakalAuctionBox{}
+	s.Loot.Catalog.Items[999] = catalog.LootItem{ID: 999, Kind: "stackable"}
+	s.Loot.Catalog.Items[1000] = catalog.LootItem{ID: 1000, Kind: "stackable"}
+	s.Rules.Bidding.Hards[0].Rates[0].Grade = 1
+	s.Rules.Bidding.Items[0].Template = 1000
+	p, role, err := s.FreezeBidding(context.Background(), store.role, "owned-run", false, at)
+	if err != nil || len(p.Lots) != 1 || p.Lots[0].Award.Template != 999 {
+		t.Fatalf("source box split into lots: %+v %v", p, err)
+	}
+	role, _, err = s.PurchaseBiddingLot(context.Background(), role, "owned-run", 0, 100, p.ReadyAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bag, err := inventory.ReadBag(role.State)
+	if err != nil || len(bag.Items) != 1 || bag.Items[0].Template != 10418036 || bag.Items[0].Amount != 5 || bag.Gold != 900 {
+		t.Fatalf("box payout %+v %v", bag, err)
+	}
 }
 
 func (s *biddingEventFake) CommitCharacterEvent(_ context.Context, account, id int64, version, key, model string, apply func(database.Character) (json.RawMessage, json.RawMessage, error)) (database.Character, bool, error) {

@@ -157,6 +157,11 @@ func PrepareBakalOpening(rules *catalog.BakalRaidRules, hard bool) (*BakalOpenin
 }
 
 // Stage reports the lifecycle stage.
+// HardMode is the mode selected when this owned run was prepared.
+func (o *BakalOpening) HardMode() bool { return o.hard }
+
+func (o *BakalOpening) NativeRuntime() bool { return o.runtime != nil }
+
 func (o *BakalOpening) Stage() BakalOpeningStage { return o.stage }
 
 func (o *BakalOpening) ActiveSince() time.Time { return o.readyAt }

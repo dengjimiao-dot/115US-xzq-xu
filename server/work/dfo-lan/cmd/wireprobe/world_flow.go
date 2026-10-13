@@ -84,6 +84,10 @@ type worldSession struct {
 	// next151 取证文档。
 	bakal                    *legion.BakalOpening
 	bakalRun                 string
+	bakalRewardUI            *bakalRewardUI
+	bakalRewardUIError       error
+	bakalAuction             *bakalAuction
+	bakalAuctionError        error
 	bakalRecruitment         *protocol.RaidRecruitment
 	bakalFailureNotified     bool
 	bakalDeathReturnAt       time.Time
@@ -361,6 +365,10 @@ func (w *worldSession) enter(role database.Character, spawn database.WorldPositi
 	}
 	w.bakal, w.bakalRun, w.bakalCurrent, w.bakalLocation = nil, "", 0, 0
 	w.bakalRecruitment = nil
+	w.bakalRewardUI = nil
+	w.bakalRewardUIError = nil
+	w.bakalAuction = nil
+	w.bakalAuctionError = nil
 	var state character.State
 	if e := json.Unmarshal(role.State, &state); e != nil {
 		return e

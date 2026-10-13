@@ -43,15 +43,16 @@ import (
 // with other subsystems — dispatch must gate on active Bakal world state, the
 // id alone never identifies the packet.
 const (
-	CmdBakalCreateRaid   uint16 = 656  // create the raid party (waiting room)
-	CmdBakalRaidUpdate   uint16 = 657  // raid party update / leave (silent)
-	CmdBakalStartRaid    uint16 = 2089 // START_RAID — begin the vote/start flow
-	CmdBakalBattleReport uint16 = 2069 // kill / damage report from a combat room
-	CmdBakalScriptWarp   uint16 = 2070 // scripted warp inside the owned combat
-	CmdBakalLoadingDone  uint16 = 2073 // map load complete (0B)
-	CmdBakalCampReturn   uint16 = 2074 // native retreat to camp
-	CmdBakalGiveup       uint16 = 2261 // observed once pre-raid, 0B; refused upstream
-	CmdBakalFinalConfirm uint16 = 1134 // confirm the final-dungeon move
+	CmdBakalCreateRaid   uint16 = 656               // create the raid party (waiting room)
+	CmdBakalLeaveRaid    uint16 = 657               // LEAVE_RAID; distinct from C13 subparty leave
+	CmdBakalRaidUpdate   uint16 = CmdBakalLeaveRaid // legacy reconstruction alias
+	CmdBakalStartRaid    uint16 = 2089              // START_RAID — begin the vote/start flow
+	CmdBakalBattleReport uint16 = 2069              // kill / damage report from a combat room
+	CmdBakalScriptWarp   uint16 = 2070              // scripted warp inside the owned combat
+	CmdBakalLoadingDone  uint16 = 2073              // map load complete (0B)
+	CmdBakalCampReturn   uint16 = 2074              // native retreat to camp
+	CmdBakalGiveup       uint16 = 2261              // observed once pre-raid, 0B; refused upstream
+	CmdBakalFinalConfirm uint16 = 1134              // confirm the final-dungeon move
 )
 
 // S2C notification ids of the Bakal run. 574/581/572/584 are the shared RAID

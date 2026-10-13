@@ -59,6 +59,7 @@ type BakalRaidRules struct {
 	Symbols                map[string]uint32          `json:"symbols"`
 	EntryScenes            map[uint32]BakalEntryScene `json:"entry_scenes,omitempty"`
 	DungeonCatalog         *DungeonCatalog            `json:"-"`
+	HardRewards            []BakalRewardEntry         `json:"hard_rewards,omitempty"`
 	Rewards                []BakalRewardEntry         `json:"rewards"`
 	RaidID                 int                        `json:"raid_id"`
 
@@ -95,6 +96,11 @@ type BakalRankDeadCount struct {
 
 // BakalBiddingRules collects the auction tuning declared by bakal.etc.
 type BakalBiddingRules struct {
+	ItemsMax       int     `json:"items_max"`
+	StartMinPrice  uint32  `json:"start_min_price"`
+	GoldStep       uint32  `json:"gold_step"`
+	GoldMultiplier float64 `json:"gold_multiplier"`
+
 	StartDelaySecs   int                        `json:"start_delay_secs"`
 	BreakSecs        int                        `json:"break_secs"`
 	TimeSecs         int                        `json:"time_secs"`

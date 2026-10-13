@@ -91,7 +91,7 @@ func bakalTextTokens(text string) ([]pvf.Token, error) {
 			if n, e := strconv.ParseInt(word, 10, 32); e == nil {
 				out = append(out, pvf.Token{Type: 0, Value: int32(n)})
 			} else if n, e := strconv.ParseFloat(word, 32); e == nil {
-				out = append(out, pvf.Token{Type: 2, Number: float32(n)})
+				out = append(out, pvf.Token{Type: 2, Number: float32(n), Text: word})
 			} else {
 				return nil, fmt.Errorf("invalid COS value %q", word)
 			}
@@ -282,6 +282,9 @@ func loadBakalRaidTables(a *pvf.Archive, r *BakalRaidRules) error {
 	if err := loadBakalRewards(a, r); err != nil {
 		return err
 	}
+	if err := loadBakalBiddingSystem(a, r); err != nil {
+		return err
+	}
 	if err := loadBakalWeeklyBidding(a, r); err != nil {
 		return err
 	}
@@ -330,26 +333,36 @@ func loadBakalRewards(a *pvf.Archive, r *BakalRaidRules) error {
 				}
 			}
 		}
-		phases, e := bakalBlocks(b, "[phase]", "[/phase]")
-		if e != nil || len(phases) != 1 {
-			return fmt.Errorf("Bakal normal reward phase ambiguous")
-		}
-		for _, row := range bakalRows(phases[0]) {
-			if !bakalEq(row.Label, "[state reward]") {
-				continue
+
+		for _, mode := range []struct {
+			open, close string
+			pool        *[]BakalRewardEntry
+		}{
+			{"[phase]", "[/phase]", &r.Rewards},
+			{"[raid phase of hardmode]", "[/raid phase of hardmode]", &r.HardRewards},
+		} {
+			phases, e := bakalBlocks(b, mode.open, mode.close)
+			if e != nil || len(phases) != 1 {
+				return fmt.Errorf("Bakal normal reward phase ambiguous")
 			}
-			names := bakalStrings(row.Args)
-			v := bakalInts(row.Args)
-			if len(names) != 1 || len(v) != 5 {
-				return fmt.Errorf("invalid Bakal state reward")
+			for _, row := range bakalRows(phases[0]) {
+				if !bakalEq(row.Label, "[state reward]") {
+					continue
+				}
+				names := bakalStrings(row.Args)
+				v := bakalInts(row.Args)
+				if len(names) != 1 || len(v) != 5 {
+					return fmt.Errorf("invalid Bakal state reward")
+				}
+				if names[0] != "party_card" && names[0] != "squad_item" {
+					continue
+				}
+				if v[1] <= 0 || v[2] <= 0 {
+					return fmt.Errorf("invalid native Bakal reward weight/template")
+				}
+				*mode.pool = append(*mode.pool, BakalRewardEntry{Category: names[0], Difficulty: v[0], Weight: uint32(v[1]), Template: uint32(v[2]), Amount: 1})
 			}
-			if names[0] != "party_card" && names[0] != "squad_item" {
-				continue
-			}
-			if v[1] <= 0 || v[2] <= 0 {
-				return fmt.Errorf("invalid native Bakal reward weight/template")
-			}
-			r.Rewards = append(r.Rewards, BakalRewardEntry{Category: names[0], Difficulty: v[0], Weight: uint32(v[1]), Template: uint32(v[2]), Amount: 1})
+
 		}
 		if len(r.Rewards) == 0 {
 			return fmt.Errorf("native normal raid rewards missing")
