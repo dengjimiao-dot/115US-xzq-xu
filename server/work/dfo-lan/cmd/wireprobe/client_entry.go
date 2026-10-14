@@ -427,11 +427,20 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 		if bag, bagErr := inventory.ReadBag(role.State); bagErr == nil {
 			closetExpansion = bag.ClosetExpansion
 		}
-		if info, infoErr := protocol.AvatarClosetInfo(protocol.AvatarClosetSlots(closetExpansion)); infoErr == nil {
+		// 选中套号（CMD1103 落库的 avatar_closet_selected；缺省 0 = 第一套）。
+		// 越界（如扩容前存过大号）按 0 兜底 —— 不能让一个坏值把整帧 1076 挡住。
+		closetSelected, _, _ := readAvatarClosetSelected(role.State)
+		if closetSelected >= protocol.AvatarClosetSlots(closetExpansion) {
+			closetSelected = 0
+		}
+		if info, infoErr := protocol.AvatarClosetInfo(protocol.AvatarClosetSlots(closetExpansion), closetSelected); infoErr == nil {
 			plan.AvatarClosetInfo = info
 		}
-		// NOTI1077 衣柜内容（当前为空列表；客户端 reader 见 protocol.AvatarClosetSet）。
-		plan.AvatarClosetSet = protocol.AvatarClosetSet()
+	// NOTI1077 衣柜内容（缺口②）与兜底行合成（"洞位"覆盖隐患根治，
+	// 2026-10-14 下午）统一在下面 wearService 块内编译：注入条目要一并合并进
+	// plan.AvatarReady（NOTI13 装扮栏快照），两者必须读同一份 role.State，
+	// 且帧赋值必须排在快照构建成功之后，杜绝"条目引用合成槽、行却没下发"的
+	// 串货。wearService 为 nil 的老路径在块后兜底（只现查，不注入）。
 		// NOTI1585 装扮预设列表：官方每次登录都下发一帧。布局由反汇编客户端
 		// handler（0x14335A230）得到，编码器与官方帧逐字节对齐；栏位数取存档
 		// AvatarPresetPages（已解锁页数），未写过时用官方默认 1 页。
@@ -1004,9 +1013,59 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 					plan.WeaponAppearance, e = client.characters.AppearanceProbe(role, [2]byte{})
 				}
 			}
-			if e == nil {
-				plan.AvatarReady, e = inventory.SpecialEquipmentRestorePayload(role.State, 1)
+		if e == nil {
+			plan.AvatarReady, e = inventory.SpecialEquipmentRestorePayload(role.State, 1)
+		}
+		if e == nil {
+			// NOTI1077 衣柜内容（缺口②）+「洞位」覆盖隐患的兜底行注入
+			// （2026-10-14 下午根治）。主路径：账本终态按装扮栏现查编译条目。
+			// 兜底路径：现查不到的柜槽（行被玩家往"腾空的洞"里拖的新货覆盖了）
+			// ⇒ 用 Put 时存的备份行合成一个空闲装扮栏槽，行**随本帧 AvatarReady
+			// 快照一起下发**，客户端再由 noti1077 把它搬进柜槽。全程只走已验证
+			// 安全的「NOTI13 space 1 + noti1077」路径，一帧容器 33 都不发。
+			// 帧赋值排在快照构建成功之后：合并失败宁可只发现查条目（客户端显示
+			// 空格），也绝不让条目引用一个没有下发行的合成槽。
+			var live []protocol.AvatarClosetSetEntry
+			var injected []avatarClosetInjectedEntry
+			var planErr error
+			live, injected, planErr = avatarClosetSetPlan(role.State)
+			if planErr != nil {
+				client.event(map[string]any{"kind": "avatar_closet_set_build_error",
+					"character_id": role.ID, "error": planErr.Error()})
+				plan.AvatarClosetSet = protocol.AvatarClosetSet()
+			} else {
+				ready, readyErr := plan.AvatarReady, error(nil)
+				entries := live
+				if len(injected) > 0 {
+					var bag inventory.Bag
+					bag, readyErr = inventory.ReadBag(role.State)
+					if readyErr == nil {
+						rows := make([]inventory.BagEquipment, 0, len(bag.Special[protocol.AvatarContainerID])+len(injected))
+						rows = append(rows, bag.Special[protocol.AvatarContainerID]...)
+						for _, item := range injected {
+							rows = append(rows, item.Row)
+						}
+						ready, readyErr = inventory.EquipmentPayload(1, rows, true, bag.AvatarExpansion)
+						if readyErr == nil {
+							entries = mergeClosetEntries(live, injected)
+						}
+					}
+				}
+				if readyErr != nil {
+					// 合并失败 ⇒ 退回纯存档快照 + 仅现查条目，注入条目全部跳过。
+					client.event(map[string]any{"kind": "avatar_closet_backing_merge_error",
+						"character_id": role.ID, "injected": len(injected), "error": readyErr.Error()})
+					plan.AvatarClosetSet = protocol.AvatarClosetSetWith(live)
+				} else {
+					plan.AvatarReady = ready
+					plan.AvatarClosetSet = protocol.AvatarClosetSetWith(entries)
+				}
+				if len(entries) > 0 {
+					client.event(map[string]any{"kind": "avatar_closet_set_restored",
+						"character_id": role.ID, "entries": len(entries)})
+				}
 			}
+		}
 			if e == nil {
 				plan.Avatars, e = inventory.EquipmentPayload(1, nil, true)
 			}
@@ -1017,12 +1076,34 @@ func (client *gameConnection) dispatchCharacterEntry(requestData *clientRequest)
 				plan.CreatureList, _ = inventory.CreatureListPayload(role.State)
 				plan.CreatureGrowth, _ = inventory.CreatureGrowthPayload(role.State)
 			}
-			if e != nil {
-				client.event(map[string]any{"kind": "entry_worn_error", "error": e.Error()})
-				return dispatchHandled
+		if e != nil {
+			client.event(map[string]any{"kind": "entry_worn_error", "error": e.Error()})
+			return dispatchHandled
+		}
+	}
+	// wearService 为 nil 的老路径（无穿戴服务的会话）：NOTI1077 只按装扮栏
+	// 现查编译，不做兜底行注入——这条路径没有 AvatarReady 快照可合并，注入条目
+	// 会引用没有下发行的合成槽。与 2026-10-14 下午之前的行为逐字节一致。
+	if plan.AvatarClosetSet == nil {
+		live, injected, planErr := avatarClosetSetPlan(role.State)
+		if planErr != nil {
+			client.event(map[string]any{"kind": "avatar_closet_set_build_error",
+				"character_id": role.ID, "error": planErr.Error()})
+			plan.AvatarClosetSet = protocol.AvatarClosetSet()
+		} else {
+			if len(injected) > 0 {
+				client.event(map[string]any{"kind": "avatar_closet_backing_merge_error",
+					"character_id": role.ID, "injected": len(injected),
+					"error": "wear service unavailable: injected rows cannot ride the avatar snapshot"})
+			}
+			plan.AvatarClosetSet = protocol.AvatarClosetSetWith(live)
+			if len(live) > 0 {
+				client.event(map[string]any{"kind": "avatar_closet_set_restored",
+					"character_id": role.ID, "entries": len(live)})
 			}
 		}
-		if client.lootService != nil {
+	}
+	if client.lootService != nil {
 			rewardCtx, rewardCancel := context.WithTimeout(context.Background(), 5*time.Second)
 			legionRewards := &workflow.LegionRewardService{Store: client.gameStore, Awarder: &inventory.Awarder{Catalog: client.lootService.Catalog, Rules: client.lootService.BagRules, Equipment: client.lootService.Equipment}}
 			legionRecovered, legionErr := legionRewards.Recover(rewardCtx, role)

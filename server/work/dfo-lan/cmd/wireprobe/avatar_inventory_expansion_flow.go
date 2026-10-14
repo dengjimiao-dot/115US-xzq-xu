@@ -21,7 +21,9 @@ func avatarExpansionUsePackets(state json.RawMessage, slot uint16, applied bool)
 	if err != nil {
 		return nil, err
 	}
-	avatars, err := inventory.SpecialEquipmentRestorePayload(state, 1)
+	// [FIX-20261014 寄存行剔除] 扩容后重推装扮栏同样要剔除衣柜寄存行，
+	// 否则寄存的件会在扩容瞬间重新出现在背包里（见 avatarBarRestorePayload）。
+	avatars, err := avatarBarRestorePayload(state)
 	if err != nil {
 		return nil, err
 	}

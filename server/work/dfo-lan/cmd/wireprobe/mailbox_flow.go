@@ -159,7 +159,9 @@ func mailClaimBagPackets(state json.RawMessage, packets ...outboundPacket) ([]ou
 		}
 		packets = append(packets, main)
 	}
-	avatar, err := inventory.SpecialEquipmentPayload(state, 1)
+	// [FIX-20261014 寄存行剔除] 领邮件时的整栏重推同样要剔除衣柜寄存行，
+	// 否则领一封时装邮件就会把寄存在衣柜里的件一起推回背包。
+	avatar, err := avatarBarUpdatePayload(state)
 	if err != nil {
 		return nil, err
 	}
