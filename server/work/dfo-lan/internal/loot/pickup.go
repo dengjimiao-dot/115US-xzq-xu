@@ -10,16 +10,19 @@ import (
 )
 
 type Service struct {
-	BlackPurgatory *BlackPurgatoryRewards
-	BleedingMine   *BleedingMineRewards
-	Currency       *OdysseyCurrency
-	Catalog        catalog.LootCatalog
-	DropCatalog    catalog.LootCatalog
-	Rules          Rules
-	BagRules       inventory.BagRules
-	Tables         Tables
-	Equipment      *inventory.EquipmentCatalog
-	CardPolicy     *CardRules
+	// Explicit candidate policy: only auto-opened training rewards may mail
+	// ordinary bag overflow. Other reward paths retain their existing rules.
+	BoostAutoOverflowMail bool
+	BlackPurgatory        *BlackPurgatoryRewards
+	BleedingMine          *BleedingMineRewards
+	Currency              *OdysseyCurrency
+	Catalog               catalog.LootCatalog
+	DropCatalog           catalog.LootCatalog
+	Rules                 Rules
+	BagRules              inventory.BagRules
+	Tables                Tables
+	Equipment             *inventory.EquipmentCatalog
+	CardPolicy            *CardRules
 	// Boxes 保存已导出的袖珍罐奖励与进度规则。
 	Boxes *BoxCatalog
 	// ChapterDrop 是章节最终领主的章节盒掉落（手册 P3 子项 3）。默认整表

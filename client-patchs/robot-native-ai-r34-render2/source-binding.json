@@ -1,0 +1,715 @@
+{
+  "client_sha256": "515fefa1c71577a15f90513f860270320f3502bc492ad596f10cf176b91c21eb",
+  "hooks": {
+    "Frame": {
+      "rva": "0x5c73760",
+      "bytes": "4055574156",
+      "instructions": [
+        "push rbp",
+        "push rdi",
+        "push r14"
+      ]
+    },
+    "Destroy": {
+      "rva": "0x642a970",
+      "bytes": "48894c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rcx"
+      ]
+    },
+    "Ai": {
+      "rva": "0x5c70760",
+      "bytes": "40534883ec20",
+      "instructions": [
+        "push rbx",
+        "sub rsp, 0x20"
+      ]
+    },
+    "Local": {
+      "rva": "0x5c70f30",
+      "bytes": "40534883ec20",
+      "instructions": [
+        "push rbx",
+        "sub rsp, 0x20"
+      ]
+    },
+    "Attack": {
+      "rva": "0x5e6fd10",
+      "bytes": "4883ec3848c7442420feffffff",
+      "instructions": [
+        "sub rsp, 0x38",
+        "mov qword ptr [rsp + 0x20], 0xfffffffffffffffe"
+      ]
+    },
+    "Range": {
+      "rva": "0x2e60350",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "AttackRange": {
+      "rva": "0x2e60460",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "Skill": {
+      "rva": "0x5ef9270",
+      "bytes": "8991fc000000",
+      "instructions": [
+        "mov dword ptr [rcx + 0xfc], edx"
+      ]
+    },
+    "SkillLookup": {
+      "rva": "0x5ef4430",
+      "bytes": "40574883ec60",
+      "instructions": [
+        "push rdi",
+        "sub rsp, 0x60"
+      ]
+    },
+    "BackdropCoordinates": {
+      "rva": "0x5b8ac50",
+      "bytes": "488bc4574156",
+      "instructions": [
+        "mov rax, rsp",
+        "push rdi",
+        "push r14"
+      ]
+    },
+    "GoalX": {
+      "rva": "0x5e7aba0",
+      "bytes": "899150070000",
+      "instructions": [
+        "mov dword ptr [rcx + 0x750], edx"
+      ]
+    },
+    "GoalY": {
+      "rva": "0x5e7abb0",
+      "bytes": "899154070000",
+      "instructions": [
+        "mov dword ptr [rcx + 0x754], edx"
+      ]
+    },
+    "Move": {
+      "rva": "0x5e7b330",
+      "bytes": "899130070000",
+      "instructions": [
+        "mov dword ptr [rcx + 0x730], edx"
+      ]
+    },
+    "Value": {
+      "rva": "0x5e65100",
+      "bytes": "4883ec2883fa31",
+      "instructions": [
+        "sub rsp, 0x28",
+        "cmp edx, 0x31"
+      ]
+    },
+    "Awakening": {
+      "rva": "0x2ed1f00",
+      "bytes": "8b8144080000",
+      "instructions": [
+        "mov eax, dword ptr [rcx + 0x844]"
+      ]
+    },
+    "Tick": {
+      "rva": "0x5c72ab0",
+      "bytes": "488bc45557",
+      "instructions": [
+        "mov rax, rsp",
+        "push rbp",
+        "push rdi"
+      ]
+    },
+    "PartyBuff": {
+      "rva": "0x2e60f00",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "Charging": {
+      "rva": "0x2e60880",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "HasDelay": {
+      "rva": "0x2e60b20",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "Delay": {
+      "rva": "0x2e5f550",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "HasReuse": {
+      "rva": "0x2e61050",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "Reuse": {
+      "rva": "0x2e601f0",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "HasJump": {
+      "rva": "0x2e609d0",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "Jump": {
+      "rva": "0x2e5ead0",
+      "bytes": "48895c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rbx"
+      ]
+    },
+    "Character": {
+      "rva": "0x5c6dc10",
+      "bytes": "40534883ec20",
+      "instructions": [
+        "push rbx",
+        "sub rsp, 0x20"
+      ]
+    },
+    "BaseStats": {
+      "rva": "0x5c6b610",
+      "bytes": "405557488bec",
+      "instructions": [
+        "push rbp",
+        "push rdi",
+        "mov rbp, rsp"
+      ]
+    },
+    "ResetStats": {
+      "rva": "0x5c11d20",
+      "bytes": "405556574154",
+      "instructions": [
+        "push rbp",
+        "push rsi",
+        "push rdi",
+        "push r12"
+      ]
+    },
+    "Recalculate": {
+      "rva": "0x5cce150",
+      "bytes": "488bc4554154",
+      "instructions": [
+        "mov rax, rsp",
+        "push rbp",
+        "push r12"
+      ]
+    },
+    "PetPreloadCall1": {
+      "rva": "0x5e47a7b",
+      "bytes": "e880040000",
+      "instructions": [
+        "call 0x145e47f00"
+      ]
+    },
+    "PetPreloadCall2": {
+      "rva": "0x5e47e9b",
+      "bytes": "e860000000",
+      "instructions": [
+        "call 0x145e47f00"
+      ]
+    },
+    "PartyHud": {
+      "rva": "0x5553590",
+      "bytes": "488bc4554154",
+      "instructions": [
+        "mov rax, rsp",
+        "push rbp",
+        "push r12"
+      ]
+    },
+    "PartyHudCompact": {
+      "rva": "0x5542930",
+      "bytes": "488bc4554154",
+      "instructions": [
+        "mov rax, rsp",
+        "push rbp",
+        "push r12"
+      ]
+    },
+    "CoinDraw": {
+      "rva": "0x5552be0",
+      "bytes": "488bc4555657",
+      "instructions": [
+        "mov rax, rsp",
+        "push rbp",
+        "push rsi",
+        "push rdi"
+      ]
+    },
+    "DestroyFighter": {
+      "rva": "0x6363da0",
+      "bytes": "48894c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rcx"
+      ]
+    },
+    "DestroyGunner": {
+      "rva": "0x6372ac0",
+      "bytes": "48894c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rcx"
+      ]
+    },
+    "DestroyMage": {
+      "rva": "0x63c4ac0",
+      "bytes": "48894c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rcx"
+      ]
+    },
+    "DestroyPriest": {
+      "rva": "0x6409b40",
+      "bytes": "48894c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rcx"
+      ]
+    },
+    "DestroyFemaleGunner": {
+      "rva": "0x33ee40",
+      "bytes": "48894c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rcx"
+      ]
+    },
+    "DestroyThief": {
+      "rva": "0x6448c90",
+      "bytes": "48894c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rcx"
+      ]
+    },
+    "CommonDestroy": {
+      "rva": "0x5787110",
+      "bytes": "48894c2408",
+      "instructions": [
+        "mov qword ptr [rsp + 8], rcx"
+      ]
+    }
+  },
+  "functions": {
+    "0x1f47e0": "4c8bdc5556574883ec7049c743b0feff",
+    "0x21be90": "488bc4895010565741564883ec7048c7",
+    "0x33d5b0": "488bc448894808555741544156415748",
+    "0x33ee40": "48894c24085356574883ec5048c74424",
+    "0x879f20": "48896c2410488974241857488b29488b",
+    "0xdcfe20": "8b81d4020000c3cccccccccccccccccc",
+    "0xe54e40": "488d81f0000000c3cccccccccccccccc",
+    "0xeede60": "4057415641574883ec4048c7442428fe",
+    "0xeedf70": "41564883ec4048c7442428feffffff48",
+    "0x1030b50": "48894c24085355565741544156415748",
+    "0x1b07610": "48899180000000c3cccccccccccccccc",
+    "0x217d5b0": "40534883ec20488bd9488b0d6066500c",
+    "0x217d600": "4c8bd1440fb6ca49bbb3010000000100",
+    "0x2577bb0": "488991f0000000c3cccccccccccccccc",
+    "0x2ad8420": "8b81d8020000c3cccccccccccccccccc",
+    "0x2e5ead0": "48895c24084889742410574883ec2049",
+    "0x2e5f550": "48895c24084889742410574883ec2049",
+    "0x2e601f0": "48895c24084889742410574883ec2049",
+    "0x2e60350": "48895c2408574883ec20488bda488bf9",
+    "0x2e60460": "48895c24084889742410574883ec2049",
+    "0x2e606c0": "48895c240848896c2410488974241857",
+    "0x2e60880": "48895c24084889742410574883ec2049",
+    "0x2e609d0": "48895c24084889742410574883ec2049",
+    "0x2e60b20": "48895c24084889742410574883ec2049",
+    "0x2e60f00": "48895c24084889742410574883ec2049",
+    "0x2e61050": "48895c24084889742410574883ec2049",
+    "0x2ed1f00": "8b8144080000c3cccccccccccccccccc",
+    "0x36352a0": "48894c24085356574883ec4048c74424",
+    "0x3b0fb90": "488bc448894808574881ec9000000048",
+    "0x3b32fb0": "4c8bdc49894b08555657415641574883",
+    "0x3d72330": "48894c2408534883ec3048c7442420fe",
+    "0x3e54a00": "48894c2408574883ec3048c7442428fe",
+    "0x4371300": "48894c24085356574883ec5048c74424",
+    "0x4799810": "48894c24085556574883ec4048c74424",
+    "0x4bdfc00": "48894c2408574883ec5048c7442438fe",
+    "0x4e4df80": "48894c2408574883ec5048c7442438fe",
+    "0x5494680": "40534883ec20488b0d037a1d09e8ee49",
+    "0x5542930": "488bc4554154415541564157488da8e8",
+    "0x5552be0": "488bc45556574154415541564157488d",
+    "0x5553590": "488bc4554154415541564157488da818",
+    "0x556cdf0": "0fb68190350000c3cccccccccccccccc",
+    "0x5595de0": "40534883ec20488b0da3620d09e88e32",
+    "0x5595e50": "4883ec28488b0d35620d09e820324100",
+    "0x5595f90": "48895c2408574883ec20488bf9488b0d",
+    "0x5596080": "48895c24084889742410574883ec2048",
+    "0x5596120": "48895c241048896c2418574883ec2048",
+    "0x5596340": "4883ec284c8bc183fa0777344863ca48",
+    "0x5787110": "48894c240853574883ec3848c7442420",
+    "0x5790070": "40534883ec20488d9994600000488bcb",
+    "0x5922690": "889188000000c3cccccccccccccccccc",
+    "0x59a90f0": "40534883ec20488bd9488b0df0a8cd08",
+    "0x59a9d30": "4883ec28488b0d5523cc08e8b0f3ffff",
+    "0x59a9de0": "40534883ec20488b0da322cc088bdae8",
+    "0x59d7c00": "ffc983f90677374863c1488d15ef8362",
+    "0x5ad7f80": "488b81a8000000ba10000000488b4808",
+    "0x5b8ac50": "488bc457415641574883ec5048c740d8",
+    "0x5b8b0a0": "48895c2410574883ec20488bf9488d54",
+    "0x5b8c7d0": "488b897001000033d2e962c12700cccc",
+    "0x5b8c890": "488b8970010000ba01000000e99fc027",
+    "0x5c11d20": "405556574154415541564157488dac24",
+    "0x5c19920": "4883ec28488b01ff9018130000488bc8",
+    "0x5c199c0": "4883ec28488b01ba03000000ff90c812",
+    "0x5c648e0": "488bc457415641574883ec5048c740b8",
+    "0x5c658d0": "48894c240857415641574883ec3048c7",
+    "0x5c65f80": "40574883ec3048c7442420feffffff48",
+    "0x5c68860": "48895c24104889742418574883ec2048",
+    "0x5c6b610": "405557488bec4883ec28488bf9e8de15",
+    "0x5c6dc10": "40534883ec20488b01488bd9ff909000",
+    "0x5c70760": "40534883ec20488d99208a0100488bcb",
+    "0x5c70f30": "40534883ec2080b9dc1f010000488bd9",
+    "0x5c72ab0": "488bc455574156488bec4883ec6048c7",
+    "0x5c73760": "40555741564883ec3080b9e08d010000",
+    "0x5c768f0": "488991a01b0100c3cccccccccccccccc",
+    "0x5c77190": "488991a81b0100c3cccccccccccccccc",
+    "0x5c77bb0": "40574883ec5048c7442420feffffff48",
+    "0x5cce150": "488bc4554154415541564157488d68a1",
+    "0x5ce53a0": "40565741564883ec5048c7442420feff",
+    "0x5ce5810": "48895c2408574883ec30488bf983fa0d",
+    "0x5ce9040": "40534883ec2080b9de1f010000488bd9",
+    "0x5ceaa10": "405556574154415541564157488dac24",
+    "0x5e47a7b": "e88004000041ffc74983c4044c8b4567",
+    "0x5e47e9b": "e86000000041ffc74983c4044c8b4567",
+    "0x5e5d890": "48894c2408534883ec3048c7442420fe",
+    "0x5e65100": "4883ec2883fa317423488b0d488a8608",
+    "0x5e67c2a": "e841160900e9461d0000488bcbe81473",
+    "0x5e6eb00": "488b81d00500004533c94885c0742c44",
+    "0x5e6fad0": "48895c240848896c2410488974241848",
+    "0x5e6fd10": "4883ec3848c7442420feffffff488b0d",
+    "0x5e70cc0": "48895c241048896c2418574883ec2048",
+    "0x5e7a300": "4885d20f84da000000574883ec5048c7",
+    "0x5e7aba0": "899150070000c3cccccccccccccccccc",
+    "0x5e7abb0": "899154070000c3cccccccccccccccccc",
+    "0x5e7b0e0": "488991a8060000c3cccccccccccccccc",
+    "0x5e7b330": "899130070000c3cccccccccccccccccc",
+    "0x5e7b340": "488bc4565741564881ec8000000048c7",
+    "0x5ed23a0": "40574883ec3048c7442420feffffff48",
+    "0x5ed78c0": "48895c24185556574883ec208bea488b",
+    "0x5eeb220": "40574883ec5048c7442420feffffff48",
+    "0x5ef18a0": "488bc448894808555657415641574883",
+    "0x5ef1b50": "48894c240853574883ec3848c7442420",
+    "0x5ef4300": "40574883ec6048c7442428feffffff48",
+    "0x5ef4430": "40574883ec6048c7442428feffffff48",
+    "0x5ef9270": "8991fc00000044888100010000c3cccc",
+    "0x5ef94c0": "4055565741544155415641574881ec80",
+    "0x5ef9f40": "48895c2410574883ec20488b81e00000",
+    "0x5efafb0": "488b0dd11a03094533c9488b15cf1a03",
+    "0x5effac0": "488b812008000033d24885c074183950",
+    "0x5f01210": "0fb74170c3cccccccccccccccccccccc",
+    "0x5f12d90": "40534883ec20488bd9488b0d680e7708",
+    "0x5f13700": "83fa0777234863c2488d1440488b84d1",
+    "0x6301f20": "488bc448894808555741544156415748",
+    "0x63633f0": "488bc448894808555741544156415748",
+    "0x6363da0": "48894c24085356574883ec4048c74424",
+    "0x63717a0": "48894c24085556574154415541564157",
+    "0x6372ac0": "48894c24085356574883ec5048c74424",
+    "0x63c3be0": "488bc448894808555741544156415748",
+    "0x63c4ac0": "48894c24085356574883ec4048c74424",
+    "0x6409160": "4c8bdc49894b085556574881ec800000",
+    "0x6409b40": "48894c24085356574883ec4048c74424",
+    "0x64296f0": "488bc448894808554154415541564157",
+    "0x642a970": "48894c24085356574883ec7048c74424",
+    "0x642b440": "40574883ec3048c7442420feffffff48",
+    "0x64487d0": "4c8bdc49894b08574883ec7049c743c0",
+    "0x6448c90": "48894c2408574883ec3048c7442420fe",
+    "0x667c460": "488b81f8110300c3cccccccccccccccc",
+    "0x6d7eae0": "48894c240853555657415641574883ec",
+    "0x6e8ba20": "40574883ec40488bf9e8bf359d014885",
+    "0x6e920a0": "8b01355c022a1f83e8048902c3cccccc",
+    "0x6e9f3a0": "e94bc7feffcccccccccccccccccccccc",
+    "0x6e9fbc0": "836104f9c3cccccccccccccccccccccc",
+    "0x6e9fcf0": "448b4104418bc083e0fe4183c80184d2",
+    "0x6e9ff10": "48895c24084889742410574883ec20f6",
+    "0x70909b0": "4c8b01498bc8498b4008807819007517",
+    "0x7807d30": "48894c2408574883ec4048c7442430fe"
+  },
+  "classes": [
+    {
+      "job": 0,
+      "vtable_rva": "0xad21370",
+      "size": "0x1a1f8",
+      "constructor_rva": "0x64296f0",
+      "methods": {
+        "0x0": "0x642b440",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 1,
+      "vtable_rva": "0xad04df8",
+      "size": "0x19b00",
+      "constructor_rva": "0x63633f0",
+      "methods": {
+        "0x0": "0x63642e0",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 2,
+      "vtable_rva": "0xad09528",
+      "size": "0x1ce48",
+      "constructor_rva": "0x63717a0",
+      "methods": {
+        "0x0": "0x6373930",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 3,
+      "vtable_rva": "0xad105f0",
+      "size": "0x1a590",
+      "constructor_rva": "0x63c3be0",
+      "methods": {
+        "0x0": "0x63c5790",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 4,
+      "vtable_rva": "0xad18e58",
+      "size": "0x1a090",
+      "constructor_rva": "0x6409160",
+      "methods": {
+        "0x0": "0x640a2e0",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 5,
+      "vtable_rva": "0x9229fa8",
+      "size": "0x1cdd0",
+      "constructor_rva": "0x33d5b0",
+      "methods": {
+        "0x0": "0x3402d0",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 6,
+      "vtable_rva": "0xad25770",
+      "size": "0x19c00",
+      "constructor_rva": "0x64487d0",
+      "methods": {
+        "0x0": "0x6448ec0",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 7,
+      "vtable_rva": "0xacfeb58",
+      "size": "0x1a640",
+      "constructor_rva": "0x6301f20",
+      "methods": {
+        "0x0": "0x6304220",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 8,
+      "vtable_rva": "0xa3c92b8",
+      "size": "0x195e8",
+      "constructor_rva": "0x4799810",
+      "methods": {
+        "0x0": "0x4799950",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 9,
+      "vtable_rva": "0xa03d270",
+      "size": "0x1a358",
+      "constructor_rva": "0x3b0fb90",
+      "methods": {
+        "0x0": "0x3b10930",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 10,
+      "vtable_rva": "0xa161618",
+      "size": "0x19650",
+      "constructor_rva": "0x3e54a00",
+      "methods": {
+        "0x0": "0x3e54c30",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 11,
+      "vtable_rva": "0xa67dfd0",
+      "size": "0x19730",
+      "constructor_rva": "0x4e4df80",
+      "methods": {
+        "0x0": "0x4e4e440",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 12,
+      "vtable_rva": "0xa59ddc0",
+      "size": "0x19620",
+      "constructor_rva": "0x4bdfc00",
+      "methods": {
+        "0x0": "0x4bdfd90",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 13,
+      "vtable_rva": "0xa27e9a0",
+      "size": "0x19640",
+      "constructor_rva": "0x4371300",
+      "methods": {
+        "0x0": "0x4371670",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 14,
+      "vtable_rva": "0xa0419a0",
+      "size": "0x19738",
+      "constructor_rva": "0x3b32fb0",
+      "methods": {
+        "0x0": "0x3b33350",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 15,
+      "vtable_rva": "0x9e7bf20",
+      "size": "0x19650",
+      "constructor_rva": "0x36352a0",
+      "methods": {
+        "0x0": "0x3635940",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    },
+    {
+      "job": 16,
+      "vtable_rva": "0x95ad718",
+      "size": "0x19780",
+      "constructor_rva": "0x1030b50",
+      "methods": {
+        "0x0": "0x1031b20",
+        "0x90": "0x5c70760",
+        "0x570": "0x5c70f30",
+        "0x12e0": "0x5ce08f0",
+        "0x12f0": "0x5cdd900",
+        "0x2338": "0x5c6dc10"
+      }
+    }
+  ],
+  "render_vtables": {
+    "0x9c4f688": {
+      "0x60": "0x5b841b0",
+      "0x130": "0x5b8b120"
+    },
+    "0x9a46f30": {
+      "0x188": "0x26714b0",
+      "0x190": "0x266e340"
+    }
+  },
+  "sources": {
+    "src/actor_classes.h": "2e8dbe267b0d4a1f3db21140feffd99b4e2c350d129635180bf009b0d4c18fd3",
+    "src/ai_policy.h": "6be702304cedf35cb8a613bd8b292a40f0aad0f0f53c2af4cc6f0d5a8d15fa85",
+    "src/crash_trace.h": "25ec673387dbc622193b061c9546550dca1a327ee1ba2de69cf553d6328d3659",
+    "src/native_actor.cpp": "4e8c1d01b04273329a373331c577db72f8c872003cc82d1b673519ba8a305980",
+    "src/native_actor.h": "2298ab7138375d066b78c861c974e2cf09715075b804c233933631d5e76bca4f",
+    "src/natural_policy.h": "f2b3f4604d1f88c97fb98036758ffb922882cedb680ed0a86eccc6aa1683112b",
+    "src/plugin.cpp": "d70110632b963cbaa43ba6ba6e862f7d9e2cb94f6aecd1ea2c4a13ff56c044a9",
+    "src/skill_policy.h": "f0ad60031366a9221ddff2ec469f13aceebd68b1510b2dd1056f5842c7806ee1",
+    "src/test_backdrop.cpp": "93b1eebe2f8a99ee15d6971727ea5ef819b640878187077065eab49e5d5f10f5",
+    "src/test_crash_trace.cpp": "301e0a395b13bf30d0b31b6ad0ccdb02ca7f2f9f732ee8ade7ddd6c5abe4f1e1",
+    "src/test_hook_coexistence.cpp": "fbbd3604bb027ee50cb3db52185c2eeaf75149230b366a5d02414457eb024aea",
+    "src/test_host.cpp": "abb20e7ca94f2a2f8bb86ebaa14522eb72dbb97b7d23d4ebefa3b4a5f9f5b2aa",
+    "src/test_player_state.cpp": "4d8ecd66c12e20c819b81a06a84569469f6ed04119917bacf5da64642da95c3d",
+    "src/test_policy.cpp": "2397c885fa8ba2313b23b1a4daedcad1824b2bb924c461454651f490241c07dd",
+    "src/test_skill_lookup.cpp": "e8918f12c1d3e84e7050ca635c08723ef5c2fbe291c3d134e80db3434f94477d",
+    "src/test_skill_policy.cpp": "9e0e2c831f2d8d107ee3a7e0718ca3ce6dd330a3df3c7626235190b616aa325f"
+  }
+}

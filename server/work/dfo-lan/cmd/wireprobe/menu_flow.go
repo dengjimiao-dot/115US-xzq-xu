@@ -15,6 +15,7 @@ func clearSelectedWorld(w *worldSession) {
 		w.state = database.WorldState{}
 		w.activeDungeon = nil
 		w.soloPartyReady = false
+		w.ordinarySoloParty = nil
 		w.ispinsRepeatPending = false
 		w.ispinsRetryPending = false
 		w.ispins = nil

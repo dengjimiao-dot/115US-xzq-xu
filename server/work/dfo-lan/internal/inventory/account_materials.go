@@ -69,6 +69,10 @@ type AccountMaterialDelta struct {
 type AccountMaterials struct {
 	Version string            `json:"version"`
 	Counts  map[uint16]uint32 `json:"counts,omitempty"`
+	// CN common-item storage uses template identities, not the US fixed slots.
+	// Its gameplay view is rendered by the existing local feature bridge.
+	CommonItems   map[uint32]uint32 `json:"common_items,omitempty"`
+	SymbolReceipt json.RawMessage   `json:"symbol_receipt,omitempty"`
 }
 
 func NewAccountMaterials() AccountMaterials {
@@ -86,6 +90,14 @@ func ReadAccountMaterials(raw json.RawMessage) (AccountMaterials, error) {
 	}
 	if m.Version != "account-materials-v1" {
 		return m, fmt.Errorf("unsupported account material storage")
+	}
+	for id, n := range m.CommonItems {
+		if id < 2 {
+			return m, fmt.Errorf("invalid common material identity")
+		}
+		if n == 0 {
+			delete(m.CommonItems, id)
+		}
 	}
 	for _, legacy := range []struct{ from, to uint16 }{{381, 0}, {382, 1}} {
 		if n := m.Counts[legacy.from]; n != 0 {
@@ -118,7 +130,7 @@ func (m AccountMaterials) Save() (json.RawMessage, error) {
 func (m AccountMaterials) Count(template uint32) uint32 {
 	slot, ok := accountMaterialSlotByTemplate[template]
 	if !ok {
-		return 0
+		return m.CommonItems[template]
 	}
 	return m.Counts[slot]
 }
@@ -132,7 +144,7 @@ func (m AccountMaterials) Add(template, amount uint32) (AccountMaterials, uint16
 	if amount == 0 {
 		return m, slot, fmt.Errorf("invalid account material amount")
 	}
-	out := AccountMaterials{Version: m.Version, Counts: map[uint16]uint32{}}
+	out := AccountMaterials{Version: m.Version, Counts: map[uint16]uint32{}, CommonItems: m.CommonItems, SymbolReceipt: m.SymbolReceipt}
 	for s, n := range m.Counts {
 		out.Counts[s] = n
 	}
@@ -151,6 +163,15 @@ func (m AccountMaterials) Add(template, amount uint32) (AccountMaterials, uint16
 func (m AccountMaterials) Spend(template, amount uint32) (AccountMaterials, uint16, error) {
 	slot, ok := accountMaterialSlotByTemplate[template]
 	if !ok {
+		if template > 1 && amount > 0 && m.CommonItems[template] >= amount {
+			out := m
+			out.CommonItems = map[uint32]uint32{}
+			for id, n := range m.CommonItems {
+				out.CommonItems[id] = n
+			}
+			out.CommonItems[template] -= amount
+			return out, 0, nil
+		}
 		return m, 0, fmt.Errorf("not an account material template")
 	}
 	if amount == 0 {
@@ -159,7 +180,7 @@ func (m AccountMaterials) Spend(template, amount uint32) (AccountMaterials, uint
 	if m.Counts[slot] < amount {
 		return m, slot, fmt.Errorf("insufficient account material")
 	}
-	out := AccountMaterials{Version: m.Version, Counts: map[uint16]uint32{}}
+	out := AccountMaterials{Version: m.Version, Counts: map[uint16]uint32{}, CommonItems: m.CommonItems, SymbolReceipt: m.SymbolReceipt}
 	for s, n := range m.Counts {
 		out.Counts[s] = n
 	}

@@ -21,9 +21,9 @@ import (
 //     全部 < 4×12=48，与"套×12"模型吻合；旧代码按 4 槽钳制 ⇒ 10 件被丢
 //     （业主报"只保存了几件"的直接根因）。
 const (
-	MaxAvatarClosetExpansion byte = 3                  // Tier1/2/3
+	MaxAvatarClosetExpansion byte = 3                            // Tier1/2/3
 	MaxAvatarClosetSlots     byte = MaxAvatarClosetExpansion + 1 // 4 套
-	AvatarClosetSlotsPerSet  byte = 12                            // 每套柜槽数
+	AvatarClosetSlotsPerSet  byte = 12                           // 每套柜槽数
 )
 
 // AvatarClosetSlots 把已购档位数换算成套数（1..4）。
@@ -126,4 +126,3 @@ func AvatarClosetSetWith(entries []AvatarClosetSetEntry) []byte {
 	}
 	return body
 }
-

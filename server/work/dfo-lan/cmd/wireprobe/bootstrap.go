@@ -19,6 +19,7 @@ import (
 	"dfolan/internal/loot"
 	"dfolan/internal/oracleresearch"
 	"dfolan/internal/quest"
+	"dfolan/internal/ranking"
 	"dfolan/internal/reward"
 	"dfolan/internal/workflow"
 	"dfolan/internal/world"
@@ -41,6 +42,7 @@ import (
 type gatewayRuntime struct {
 	// Wire team sequences are unique across connections in this runtime.
 	bakalTeamSequence     atomic.Uint32
+	onlineGM              *onlineGMRegistry
 	config                Config
 	accountOptionsPayload []byte
 	apocalypseCatalog     *catalog.ApocalypseCatalog
@@ -56,14 +58,20 @@ type gatewayRuntime struct {
 	// aradPassCatalog 是战令（阿拉德通行证）的源目录：等级表/奖励表/任务表全部
 	// 来自 PVF 里的 `newaradpassevent.evt`（见 internal/aradpass + gamedata）。
 	// nil = 该活动未装配，2209/2210 推送与 680 领奖都按「活动未开启」处理。
-	aradPassCatalog  *aradpass.Catalog
-	boostEventInfo   []byte
-	characters       *character.Service
-	channelDirectory *catalog.ChannelDirectory
-	channelTowns     map[uint32]catalog.TownArea
-	channelGuides    map[uint32]uint32
-	azureFlip        *azureFlipConfig
-	channelInfo      *catalog.ChannelInfo
+	aradPassCatalog    *aradpass.Catalog
+	boostEventInfo     []byte
+	characters         *character.Service
+	channelDirectory   *catalog.ChannelDirectory
+	channelTowns       map[uint32]catalog.TownArea
+	channelGuides      map[uint32]uint32
+	azureFlip          *azureFlipConfig
+	channelInfo        *catalog.ChannelInfo
+	attendance         *workflow.AttendanceService
+	online             *workflow.RoutineService
+	daily              *workflow.RoutineService
+	membership         *workflow.MembershipService
+	attendanceCalendar *character.FatigueService
+	weekly             *workflow.RoutineService
 	// raidEntrances 是 PVF 解析的入口规则；巴卡尔状态由本地 legion 实现管理。
 	raidEntrances map[uint32]catalog.RaidEntrance
 	// channelSpawns 是各内容频道的专属城镇落点（见 prepareRuntime 的投影）。
@@ -77,7 +85,7 @@ type gatewayRuntime struct {
 	itemService        *inventory.ItemService
 	journalRules       *catalog.EquipmentJournalRules
 	lootService        *loot.Service
-	// bakalRaidRules / bakalRewardService：巴卡尔攻坚战（contents/2022/
+	// nativeBakalRaidRules / nativeBakalRewardService：巴卡尔攻坚战（contents/2022/
 	// bakalraid）的规则直读与奖励账本；nil = 该内容未装载。
 	bakalRaidRules        *catalog.BakalRaidRules
 	bakalRewardService    *workflow.BakalRewardService
@@ -95,6 +103,8 @@ type gatewayRuntime struct {
 	progressionService    *character.ProgressionService
 	questService          *quest.Service
 	raw                   []byte
+	rankingRules          *ranking.Rules
+	socialProfiles        bool
 	responses             map[uint16][]byte
 	rewards               reward.Notifier
 	selectProbe           *protocol.SelectProbeState
@@ -139,8 +149,15 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 	// Confirmed gameplay behavior is not configurable.
 	omenRewards := true
 	omenState := true
+	// The launcher selects the full current-client wear policy through this
+	// existing override. Catalog preparation and the later item service must
+	// consume the same policy, rather than preparing against an empty/old path.
+	if fullWear := os.Getenv("DFO_EQUIPMENT_WEAR_RULES"); fullWear != "" {
+		startup.EquipmentWearRules = fullWear
+	}
 	pvfCatalogs, pvfCatalogErr := gamedata.PrepareCatalogs(gamedata.CatalogInputs{
 		Selection:              startup.PVFCatalogs,
+		StartupHashWarnings:    true,
 		ArchivePath:            startup.PVFArchive,
 		ArchiveChecksum:        startup.PVFSHA256,
 		CharacterPath:          startup.CharacterCatalog,
@@ -296,6 +313,11 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 	}
 	if _, err := pvfCatalogs.InstallRosterBackgrounds(); err != nil {
 		return nil, nil, fmt.Errorf("PVF roster background runtime rules: %v", err)
+	}
+	if pvfCatalogs.Contracts != nil {
+		if _, err := cashshop.InstallContractRules(pvfCatalogs.Contracts); err != nil {
+			return nil, nil, fmt.Errorf("PVF contract runtime rules: %v", err)
+		}
 	}
 	if _, err := pvfCatalogs.InstallFameRules(); err != nil {
 		return nil, nil, fmt.Errorf("PVF fame runtime rules: %v", err)
@@ -664,6 +686,9 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 				return nil, nil, e
 			} else {
 				skinCatalog = entries
+				characters.ProfileFrames = func(ctx context.Context, role character.Character) ([2]uint32, error) {
+					return loadProfileFrames(ctx, s, role, entries)
+				}
 				templates := make([]uint32, 0, len(entries))
 				for template := range entries {
 					templates = append(templates, template)
@@ -1021,6 +1046,9 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 		//（下发包 options 全 0，客户端不显示孔）。gear 已含 Full 目录，挂上即可。
 		if characters != nil && gear != nil {
 			characters.Equipment = gear
+			characters.WeaponSkinRecipes = pvfCatalogs.WeaponSkinRecipes
+			characters.WeaponSkinBagRules = bag
+			characters.SymbolSockets = pvfCatalogs.SymbolSockets
 		}
 		dropCatalog := c
 		if pvfCatalogs.Items != nil {
@@ -1085,7 +1113,8 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 			c.Items = items
 		}
 		lootService = &loot.Service{Catalog: c, DropCatalog: dropCatalog, Rules: r, BagRules: bag, Tables: tables, Equipment: gear}
-		itemService = &inventory.ItemService{Model: r.Model, Catalog: c, BagRules: bag, Equipment: gear, AvatarDisjoint: pvfCatalogs.AvatarDisjoint, EmblemCompound: pvfCatalogs.EmblemCompound, AvatarSockets: pvfCatalogs.AvatarSockets, EmblemInlay: pvfCatalogs.EmblemInlay, Journal: journalRules, CreateCost: equipmentCreateCost, Transform: equipmentTransformSystem, Points: pointRules}
+		lootService.BoostAutoOverflowMail = os.Getenv("DFO_BOOST_AUTO_OVERFLOW_MAIL") == "1"
+		itemService = &inventory.ItemService{Model: r.Model, Catalog: c, BagRules: bag, Equipment: gear, AvatarDisjoint: pvfCatalogs.AvatarDisjoint, EmblemCompound: pvfCatalogs.EmblemCompound, AvatarSockets: pvfCatalogs.AvatarSockets, EmblemInlay: pvfCatalogs.EmblemInlay, SymbolSockets: pvfCatalogs.SymbolSockets, Journal: journalRules, CreateCost: equipmentCreateCost, Transform: equipmentTransformSystem, Points: pointRules, Truth: pvfCatalogs.Truth}
 		if progressionService != nil {
 			progressionService.CompletionAwarder = &inventory.Awarder{Catalog: c, Rules: bag, Equipment: gear}
 		}
@@ -1186,7 +1215,10 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 		if progressionService != nil {
 			odysseyGrowth = progressionService.Odyssey
 		}
-		questService = &quest.Service{Store: gameStore, Catalog: data, Professions: characters.Catalog, Progression: progressionService, Odyssey: odysseyGrowth, Dungeons: dungeonCatalog}
+		questService, e = newRuntimeQuestService(quest.Service{Store: gameStore, Catalog: data, Professions: characters.Catalog, Progression: progressionService, Odyssey: odysseyGrowth, Dungeons: dungeonCatalog}, pvfCatalogs.QuestSkip)
+		if e != nil {
+			return nil, nil, e
+		}
 		var sceneIssues []string
 		townArrivalScenes, sceneIssues = catalog.TownArrivalSceneWhitelist(data, worldService.Catalog)
 		for _, issue := range sceneIssues {
@@ -1211,7 +1243,7 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 				if err != nil {
 					return nil, nil, err
 				}
-				wearService = &workflow.WearService{Store: gameStore, WearService: inventory.WearService{PremiumStore: workflow.PremiumReader{Store: gameStore}, Catalog: equipment, Professions: characters.Catalog, BagRules: lootService.BagRules, Rules: rules, AvatarRecast: pvfCatalogs.AvatarRecast, AvatarRecastLoot: &lootService.Catalog}}
+				wearService = &workflow.WearService{Store: gameStore, WearService: inventory.WearService{PremiumStore: workflow.PremiumReader{Store: gameStore}, Catalog: equipment, Journal: journalRules, Professions: characters.Catalog, BagRules: lootService.BagRules, Rules: rules, AvatarRecast: pvfCatalogs.AvatarRecast, AvatarRecastLoot: &lootService.Catalog}}
 
 				// 装备变换要用「部位 → 装备类型」映射去**背包**里找源（客户端允许把背包装备放进
 				// 界面「变换前」槽，请求只带部位码），所以把同一份 WearRules 也交给 inventory 物品服务。
@@ -1233,6 +1265,7 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 
 				// 创建期的初始装备投影共用同一份装备目录与部位槽映射，避免另立编号。
 				characters.Equipment = equipment
+				characters.SymbolSockets = pvfCatalogs.SymbolSockets
 				characters.WearRules = rules
 				if startup.EquipmentFullCatalog != "" || pvfCatalogs.Equipment != nil {
 					full, err := pvfCatalogs.OpenFullEquipment(startup.EquipmentFullCatalog, data.Source.Checksum)
@@ -1565,6 +1598,10 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 			return nil, nil, e
 		}
 		logAttunementRebalance(attunement, attunementRebalance)
+		if e = attunement.SetBorderMultipliers(startup.AttunementQuantityMultiplier, startup.AttunementRarityWeightMultiplier); e != nil {
+			return nil, nil, e
+		}
+		log.Printf("Border of Attunement reward draws=%dx epic/primeval relative weights=%dx (normalized); omen/oath unchanged", startup.AttunementQuantityMultiplier, startup.AttunementRarityWeightMultiplier)
 		// 展开一层要用的礼包目录。缺了它就只能把包装丢在地上，而那正是本功能要
 		// 修的那个报告，所以这里硬失败而不是退化成旧行为。
 		if boosterCatalog == nil || len(boosterCatalog.Definitions) == 0 {
@@ -1702,6 +1739,11 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 		}
 	}
 	hub := newLanHub()
+	stopTownRobots, robotErr := startTownRobots(hub)
+	if robotErr != nil {
+		return nil, nil, robotErr
+	}
+	resources.add(stopTownRobots)
 	// 沉月湖单人配置一律从**直读**推导（业主 2026-10-02：直读模式下不新增 JSON，
 	// 也不再需要 -moon-solo-config 这种手工配置档）。频道/城镇/翻牌张数与**翻牌池**
 	// 全部来自 PVF（池 = 第二层声明的掉落组里可结算的堆叠物品，权重照抄源里）；
@@ -1787,7 +1829,97 @@ func prepareRuntime(startup Config) (prepared *gatewayRuntime, cleanup func(), p
 				binary.LittleEndian.Uint16(boostEventInfo), len(boostEventInfo))
 		}
 	}
+	var attendanceClock *character.FatigueService
+	if pvfCatalogs.AttendanceLogin != nil || pvfCatalogs.AttendanceWeekly != nil || pvfCatalogs.AttendanceOnline != nil || pvfCatalogs.AttendanceDaily != nil || pvfCatalogs.Membership != nil {
+		attendanceClock, err = loadAttendanceClock(attendanceCalendarPath(startup.FatigueRules))
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	var attendance *workflow.AttendanceService
+	if pvfCatalogs.AttendanceLogin != nil {
+		if pvfCatalogs.Items == nil || gameStore == nil || fatigueService == nil {
+			return nil, nil, errors.New("attendance requires items, storage and game calendar")
+		}
+		attendance, err = workflow.NewAttendanceService(gameStore, *pvfCatalogs.AttendanceLogin, *pvfCatalogs.Items)
+		if err != nil {
+			return nil, nil, err
+		}
+		base := boostEventInfo
+		if len(base) == 0 {
+			base = townEventInfoTable
+		}
+		boostEventInfo, err = attendanceOpening(attendance, base, attendanceClock.Location)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	var membership *workflow.MembershipService
+	if pvfCatalogs.Membership != nil {
+		if pvfCatalogs.Items == nil || gameStore == nil || attendanceClock == nil || attendanceClock.Location == nil {
+			return nil, nil, errors.New("membership requires items, storage and calendar")
+		}
+		membership, err = workflow.NewMembershipService(gameStore, *pvfCatalogs.Membership, *pvfCatalogs.Items, attendanceClock.Location)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err = membership.Bind(); err != nil {
+			return nil, nil, err
+		}
+	}
+	var daily *workflow.RoutineService
+	if pvfCatalogs.AttendanceDaily != nil {
+		if pvfCatalogs.Items == nil || gameStore == nil || attendanceClock == nil || attendanceClock.Location == nil {
+			return nil, nil, errors.New("daily requires items, storage and calendar")
+		}
+		daily, err = workflow.NewRoutineService(gameStore, *pvfCatalogs.AttendanceDaily, *pvfCatalogs.Items)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err = daily.BindSequentialClears(attendanceClock.Location, attendanceClock.Rules.ResetHour); err != nil {
+			return nil, nil, err
+		}
+	}
+	var online *workflow.RoutineService
+	if pvfCatalogs.AttendanceOnline != nil {
+		if pvfCatalogs.Items == nil || gameStore == nil || attendanceClock == nil || attendanceClock.Location == nil {
+			return nil, nil, errors.New("online requires items, storage and calendar")
+		}
+		online, err = workflow.NewRoutineService(gameStore, *pvfCatalogs.AttendanceOnline, *pvfCatalogs.Items)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	var weekly *workflow.RoutineService
+	if pvfCatalogs.AttendanceWeekly != nil {
+		if pvfCatalogs.Items == nil || gameStore == nil || fatigueService == nil || attendanceClock.Location == nil {
+			return nil, nil, errors.New("weekly requires selected items, storage and game calendar")
+		}
+		weekly, err = workflow.NewRoutineService(gameStore, *pvfCatalogs.AttendanceWeekly, *pvfCatalogs.Items)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err = weekly.BindCommittedClears(attendanceClock.Location, attendanceClock.Rules.ResetHour); err != nil {
+			return nil, nil, err
+		}
+		base := boostEventInfo
+		if len(base) == 0 {
+			base = townEventInfoTable
+		}
+		boostEventInfo, err = weeklyOpening(weekly, base, attendanceClock.Location)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 	prepared = &gatewayRuntime{
+		online:                online,
+		daily:                 daily,
+		membership:            membership,
+		attendance:            attendance,
+		attendanceCalendar:    attendanceClock,
+		weekly:                weekly,
+		socialProfiles:        gameStore != nil && characters != nil,
+		rankingRules:          pvfCatalogs.RankingRules,
 		config:                startup,
 		accountOptionsPayload: accountOptionsPayload,
 		apocalypseCatalog:     apocalypseCatalog,

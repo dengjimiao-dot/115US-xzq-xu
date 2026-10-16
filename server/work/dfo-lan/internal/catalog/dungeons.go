@@ -34,7 +34,9 @@ type DungeonLayer struct {
 	Maps     []uint32 `json:"maps"`
 }
 type DungeonDefinition struct {
-	ID                       uint32       `json:"id"`
+	ID uint32 `json:"id"`
+	// Type preserves the native [dungeon type] string for source-bound adapters.
+	Type                     string       `json:"dungeon_type,omitempty"`
 	Script                   ScriptRecord `json:"script"`
 	MinimumLevel, BasisLevel uint32
 	Tutorial, NoFatigue      bool
@@ -223,6 +225,7 @@ func (c *DungeonCatalog) DeclaredEnterFatigue() string {
 }
 
 type DungeonCatalog struct {
+	Elvenmere        *ElvenmereRules                      `json:"-"`
 	Source           pvf.ArchiveSnapshot                  `json:"source"`
 	Dungeons         map[uint32]DungeonDefinition         `json:"dungeons"`
 	LegionContents   *LegionContents                      `json:"-"`
@@ -365,6 +368,7 @@ func sourceBoss(cells []pvf.Token) uint32 {
 
 func ParseDungeon(id uint32, s ScriptRecord) (DungeonDefinition, error) {
 	d := DungeonDefinition{ID: id, Script: s}
+	d.Type = DungeonType(d)
 	if enabled := consistentHellPartySection(s.Cells, "[hell dungeon]"); len(enabled) == 1 && enabled[0].Type == 0 && enabled[0].Value == 1 {
 		mapIndex := consistentHellPartySection(s.Cells, "[seal door map index]")
 		position := consistentHellPartySection(s.Cells, "[seal door pos]")
@@ -504,17 +508,7 @@ func ParseDungeon(id uint32, s ScriptRecord) (DungeonDefinition, error) {
 		enter[0].Type == 0 && enter[0].Value > 0 && enter[0].Value <= 65535 {
 		d.EnterFatigue = uint16(enter[0].Value)
 	}
-	for i := 0; i < len(s.Cells); i++ {
-		if s.Cells[i].Type != 3 || s.Cells[i].Text != "[maze info]" {
-			continue
-		}
-		start := i + 1
-		i++
-		for i < len(s.Cells) && !(s.Cells[i].Type == 3 && s.Cells[i].Text == "[maze info]") {
-			i++
-		}
-		c := s.Cells[start:i]
-		i--
+	for _, c := range dungeonMazeSourceCells(s.Cells) {
 		if len(d.Mazes) >= 256 {
 			return d, fmt.Errorf("too many mazes")
 		}
@@ -656,6 +650,32 @@ func ParseDungeon(id uint32, s ScriptRecord) (DungeonDefinition, error) {
 		return d, fmt.Errorf("no source maze")
 	}
 	return d, nil
+}
+
+// Native DGN reader147444b30 initializes its default maze at +9f0 before
+// processing optional [maze info] and the size/map/start/boss fields. Older
+// raid scripts declare those fields directly; retain that source block rather
+// than inventing a wrapper or discarding the dungeon. Explicit blocks continue
+// to own their fields independently of the header.
+func dungeonMazeSourceCells(cells []pvf.Token) [][]pvf.Token {
+	var blocks [][]pvf.Token
+	start := -1
+	for i, t := range cells {
+		if t.Type != 3 || t.Text != "[maze info]" {
+			continue
+		}
+		if start >= 0 {
+			blocks = append(blocks, cells[start:i])
+		}
+		start = i + 1
+	}
+	if start >= 0 {
+		return append(blocks, cells[start:])
+	}
+	if len(sectionCells(cells, "[map specification]")) > 0 {
+		return [][]pvf.Token{cells}
+	}
+	return nil
 }
 func ImportDungeons(a *pvf.Archive, ids []uint32) (DungeonCatalog, error) {
 	return importDungeons(a, ids, false)

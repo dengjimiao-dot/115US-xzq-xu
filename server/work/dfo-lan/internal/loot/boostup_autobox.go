@@ -88,9 +88,9 @@ func (s *Service) BoostAutoGrants(role Role, step byte, boxes []boostup.Reward) 
 // 走 EquipmentCatalog.Reward 取源 [durability]，宠物装另走 AddPetGear。
 // 自动开盒没有理由自己再写一遍这套规则。
 //
-// 背包放不下时整步回滚，不发邮寄：与 PrepareBoostGift 同一条约定（没有
-// 「未核实的邮寄兜底」）。领奖标记与发放同事务，回滚后玩家清包再点一次
-// 即可，不会既丢了这一步又拿不到东西。
+// 默认背包放不下时整步回滚。显式 BoostAutoOverflowMail 策略启用后，普通
+// 背包溢出返回完整邮件实例，由 workflow 在同一事务落邮件、材料与领奖标记；
+// 邮箱满或任一源校验失败仍整步回滚。其它领奖路径保持原来的容量规则。
 //
 // 提交与幂等在 workflow.LootService.boostAutoStep（§7.2 E13）。
 func (s *Service) PrepareBoostAutoStep(current Role, c *boostup.Catalog, step byte, counts json.RawMessage) (json.RawMessage, json.RawMessage, BoostStepReceipt, error) {
@@ -132,7 +132,13 @@ func (s *Service) PrepareBoostAutoStep(current Role, c *boostup.Catalog, step by
 			continue
 		}
 		var r inventory.AwardReceipt
-		state, r, e = awarder.Grant(state, g.Template, g.Amount)
+		if s.BoostAutoOverflowMail {
+			var attachments []inventory.MailItem
+			state, r, attachments, e = awarder.GrantOrMail(state, g.Template, g.Amount)
+			out.MailItems = append(out.MailItems, attachments...)
+		} else {
+			state, r, e = awarder.Grant(state, g.Template, g.Amount)
+		}
 		if e != nil {
 			return nil, nil, BoostStepReceipt{}, e
 		}

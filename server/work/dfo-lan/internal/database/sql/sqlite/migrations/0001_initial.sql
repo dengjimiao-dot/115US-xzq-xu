@@ -660,3 +660,20 @@ ALTER TABLE character_omen_state ADD COLUMN misses INTEGER NOT NULL DEFAULT 0 CH
 ALTER TABLE accounts ADD COLUMN character_slots_bonus INTEGER NOT NULL DEFAULT 0 CHECK(character_slots_bonus BETWEEN 0 AND 65534);
 
 -- end migration
+
+-- migration: 0038_character_capacity.sql
+-- Additive: absent rows preserve the configured base; existing saves stay intact.
+CREATE TABLE IF NOT EXISTS account_character_slots (
+ account_id BIGINT PRIMARY KEY REFERENCES accounts(id),
+ capacity INTEGER NOT NULL CHECK(capacity BETWEEN 1 AND 255)
+);
+-- end migration
+
+-- migration: 0039_account_common_materials.sql
+-- Additive storage: older binaries update account_material_storage without
+-- touching this table, so rollback cannot erase the new account-common items.
+CREATE TABLE IF NOT EXISTS account_common_material_storage (
+ account_id BIGINT PRIMARY KEY REFERENCES accounts(id),
+ data TEXT NOT NULL CHECK(json_valid(data))
+);
+-- end migration

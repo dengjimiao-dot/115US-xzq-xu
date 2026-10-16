@@ -227,7 +227,8 @@ func literalArgHits(t *testing.T, dir string) []string {
 	return hits
 }
 
-func fieldMap(fields []string) map[string]string {	out := make(map[string]string, len(fields))
+func fieldMap(fields []string) map[string]string {
+	out := make(map[string]string, len(fields))
 	for _, entry := range fields {
 		name, typ, found := strings.Cut(entry, ":")
 		if found {

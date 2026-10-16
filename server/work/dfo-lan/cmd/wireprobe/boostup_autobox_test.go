@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -250,5 +251,65 @@ func TestBoostAutoGrantsActualSource(t *testing.T) {
 	}
 	if len(got) != 3 || amounts[590015966] != 1000 || amounts[590015964] != 1 || amounts[3037] != 1000 {
 		t.Fatalf("step11 box: %+v", got)
+	}
+
+	// Exercise the adopted overflow path with the same live source. Only the
+	// slot capacity is narrowed for the test; reward definitions remain native.
+	full, e := inventory.OpenPVFEquipmentCatalog(a, index)
+	must115(t, e)
+	items := catalog.LootCatalog{Source: a.Snapshot()}
+	must115(t, items.SupplementItemIndex(index))
+	must115(t, items.EnableRuntimeDetails(a, index))
+	defer items.CloseDetails()
+	award := &inventory.Awarder{Catalog: items, Equipment: &inventory.EquipmentCatalog{Full: full, Source: a.Snapshot()}, Rules: inventory.BagRules{
+		Model: "reference90-bag-v1", Source: a.Snapshot().Checksum, MissingStackLimit: 1000,
+		EquipmentSlots: [2]uint16{9, 9}, Slots: map[string][2]uint16{"[material]": {121, 121}},
+	}}
+	for _, id := range []uint32{100051285, 100051289, 590015966} {
+		amount := uint32(1)
+		if id == 590015966 {
+			amount = 1000
+		}
+		initial, _, err := award.Grant(json.RawMessage(`{}`), id, 1)
+		must115(t, err)
+		bag, err := inventory.ReadBag(initial)
+		must115(t, err)
+		if id == 590015966 {
+			bag.Items[0].Amount = inventory.StackLimitForTemplate(items, award.Rules, id)
+			initial, err = inventory.SaveBag(initial, bag)
+			must115(t, err)
+		}
+		next, _, attachments, err := award.GrantOrMail(initial, id, amount)
+		must115(t, err)
+		if len(attachments) != 1 {
+			t.Fatalf("native overflow %d: attachments=%+v", id, attachments)
+		}
+		if string(next) != string(initial) {
+			t.Fatalf("native overflow %d changed a full bag", id)
+		}
+		row, err := attachments[0].Row()
+		must115(t, err)
+		if id == 590015966 && binary.LittleEndian.Uint32(row[56:60]) != inventory.GrantExpireTime {
+			t.Fatalf("native overflow %d lost its period", id)
+		}
+		if id == 590015966 {
+			if attachments[0].Stack.Amount != amount {
+				t.Fatalf("native material overflow lost quantity: %+v", attachments[0])
+			}
+			bag.Items = nil
+		} else {
+			landed := bag.Equipment[0]
+			mailed := *attachments[0].Equipment
+			if mailed.Period != inventory.GrantExpireTime || row != inventory.EquipmentRow(landed) {
+				t.Fatalf("native equipment overflow changed its period or wire row: %+v", mailed)
+			}
+			mailed.Slot = landed.Slot
+			if !reflect.DeepEqual(landed, mailed) {
+				t.Fatalf("native equipment overflow changed the instance: %+v != %+v", landed, mailed)
+			}
+			bag.Equipment = nil
+		}
+		_, err = bag.AddMailItem(award.Catalog, award.Rules, award.Equipment, attachments[0])
+		must115(t, err)
 	}
 }

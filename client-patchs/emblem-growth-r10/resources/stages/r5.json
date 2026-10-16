@@ -1,0 +1,39 @@
+{
+  "client_script_sha256": "ccd17a785b86492b7ca6f9fae92aaa2f68dd4d83ed01cdc3df790ed0bab98413",
+  "client_sk_sha256": "36ace9ebd038731ed9fe085c5932ea7ee1c55c4ffe1157ac385d8d9f822c9934",
+  "localized": [
+    {
+      "table": 20,
+      "key": "New_EmblemRemodel_Disjoint_title",
+      "value": "分解徽章"
+    },
+    {
+      "table": 20,
+      "key": "New_EmblemRemodel_Upgrade_title",
+      "value": "徽章突破"
+    },
+    {
+      "table": 20,
+      "key": "New_EmblemRemodel_Tuning_title",
+      "value": "星徽共鸣"
+    }
+  ],
+  "record_files": [
+    {
+      "file": "records/4b20799b31b065796e39902448bb5ce4a2ec21ca1cbdae3a8420cc80516f51e8.json",
+      "sha256": "4b20799b31b065796e39902448bb5ce4a2ec21ca1cbdae3a8420cc80516f51e8",
+      "path": "local/20261008/emblem/iteminventorywindow.xui"
+    },
+    {
+      "file": "records/284e08bf98cb20bcae63ee9d55058f81479e0cab09fe3cf3bec4400b03c678cd.json",
+      "sha256": "284e08bf98cb20bcae63ee9d55058f81479e0cab09fe3cf3bec4400b03c678cd",
+      "path": "npc/daphne.npc"
+    },
+    {
+      "file": "records/ba232a37cb08a4f5ef3825b0a0b3009ec21576753dee2fd6085627cde1825ad0.json",
+      "sha256": "ba232a37cb08a4f5ef3825b0a0b3009ec21576753dee2fd6085627cde1825ad0",
+      "path": "etc/popupmenu.etc"
+    }
+  ],
+  "client_exe_sha256": "515fefa1c71577a15f90513f860270320f3502bc492ad596f10cf176b91c21eb"
+}

@@ -149,7 +149,7 @@ func cardCheck(ctx context.Context, s *database.TestFixture, reopened *database.
 		if e = json.Unmarshal(r.role.State, &state); e != nil {
 			return e
 		}
-		if uint64(b.Gold) != uint64(beforeBag.Gold)+uint64(p.Gold) || state.Experience != beforeState.Experience || len(b.Items) != len(beforeBag.Items) {
+		if uint64(b.Gold) != uint64(beforeBag.Gold)+uint64(p.Gold) || state.Experience != beforeState.Experience || state.Level != beforeState.Level || state.SkillPoints != beforeState.SkillPoints || len(b.Items) != len(beforeBag.Items) {
 			return fmt.Errorf("card lost or duplicated inventory/EXP")
 		}
 		actualEquipment := map[uint32]int{}

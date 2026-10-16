@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-
 )
 
 // CommitAccountMaterialEvent applies an account-scoped material change exactly
@@ -72,6 +71,10 @@ func (s *Store) commitAccountMaterialEvent(ctx context.Context, account, id int6
 	if e != nil {
 		return role, nil, false, e
 	}
+	counts, e = mergeAccountCommonMaterials(ctx, tx.queries(), account, counts)
+	if e != nil {
+		return role, nil, false, e
+	}
 	prior, e := tx.queries().CharacterEventModel(ctx, sqlcgen.CharacterEventModelParams{CharacterID: id, EventKey: key})
 	if e == nil {
 		if prior != model {
@@ -102,7 +105,11 @@ func (s *Store) commitAccountMaterialEvent(ctx context.Context, account, id int6
 	if e = tx.queries().UpdateCharacterState(ctx, sqlcgen.UpdateCharacterStateParams{CharacterID: id, State: state}); e != nil {
 		return role, nil, false, e
 	}
-	if e = tx.queries().SaveAccountMaterials(ctx, sqlcgen.SaveAccountMaterialsParams{AccountID: account, Counts: updated}); e != nil {
+	legacy, e := saveAccountCommonMaterials(ctx, tx.queries(), account, updated)
+	if e != nil {
+		return role, nil, false, e
+	}
+	if e = tx.queries().SaveAccountMaterials(ctx, sqlcgen.SaveAccountMaterialsParams{AccountID: account, Counts: legacy}); e != nil {
 		return role, nil, false, e
 	}
 	if e = tx.commit(ctx); e != nil {

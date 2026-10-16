@@ -36,21 +36,42 @@ func (w *worldSession) boostStepRequest(ctx context.Context, p []byte, id uint16
 		return refuse(e)
 	}
 	w.role = next
+	if w.loot.BoostAutoOverflowMail && (len(receipt.MailIDs) > 0 || !applied && claim && receipt.AutoOpened) && w.notifyBoostMail != nil {
+		w.notifyBoostMail(next.ID)
+	}
 	// A prior equipment event update can be retried here from durable facts.
 	w.reconcileBoostEquipment()
 	next = w.role
 	var plan []outboundPacket
+	graduation, stateErr := boostup.ReadState(next.State)
+	if stateErr != nil {
+		return nil, stateErr
+	}
+	if graduation.Training.Finished && w.quests != nil {
+		result, skipErr := (&workflow.QuestService{Store: w.store, Quest: w.quests}).ReconcileBoostMainline(ctx, next, w.boostup)
+		if skipErr != nil {
+			// The training claim is already durable. Keep its finished ACK and
+			// retry this independent atomic mainline pass at the next entry.
+			log.Printf("boost mainline graduation pending role=%d: %v", next.ID, skipErr)
+		} else {
+			plan, skipErr = w.instantQuestPlan(ctx, result)
+			if skipErr != nil {
+				return nil, skipErr
+			}
+			next = w.role
+		}
+	}
 	if claim {
-		// donor 基线在这里发的是「奖励落包落地帧 + 溢出邮寄」：本树的自动开盒
-		// 走同一条 inventory.Awarder 发放线，装不下整步回滚、不代发邮件
-		// （见 internal/loot/boostup_autobox.go 的约定），所以增量帧就是背包帧。
+		// Ordinary awards reuse the existing item update. Partial overflow
+		// rebuilds the whole ordinary container so every merged stack is shown;
+		// mail notifications use the established mailbox channel.
 		bag, err := inventory.ReadBag(next.State)
 		if err != nil {
 			return nil, err
 		}
 		packetID := uint16(14)
 		body, err := protocol.InventoryUpdate(stackSlotRows(bag, receipt.Slots...))
-		if !applied {
+		if !applied || len(receipt.MailIDs) > 0 {
 			packetID = 13
 			body, err = w.loot.Bootstrap(workflow.LootRole(next))
 		}

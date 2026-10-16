@@ -1,0 +1,57 @@
+{
+  "autoDiscover": true,
+  "recurse": true,
+  "plugins": [
+    {
+      "name": "head-text-upscale",
+      "path": "HeadTextUpscale.dll",
+      "enabled": true,
+      "entrypoint": true,
+      "deps": []
+    },
+    {
+      "name": "local-features",
+      "path": "LocalFeatures.dll",
+      "enabled": true,
+      "entrypoint": true,
+      "deps": []
+    },
+    {
+      "name": "elite-companion",
+      "path": "EliteCompanionPilot.dll",
+      "enabled": true,
+      "entrypoint": true,
+      "deps": []
+    },
+    {
+      "name": "local-dungeon-exit",
+      "path": "LocalDungeonExit.dll",
+      "enabled": true,
+      "entrypoint": true,
+      "deps": []
+    },
+    {
+      "name": "robot-native-ai",
+      "path": "RobotNativeAI.dll",
+      "enabled": true,
+      "entrypoint": true,
+      "deps": [
+        "robot-object-authority"
+      ]
+    },
+    {
+      "name": "weapon-skin-animation",
+      "path": "WeaponSkinAnimation.dll",
+      "enabled": true,
+      "entrypoint": true,
+      "deps": []
+    },
+    {
+      "name": "robot-object-authority",
+      "path": "RobotObjectAuthority.dll",
+      "enabled": true,
+      "entrypoint": true,
+      "deps": []
+    }
+  ]
+}

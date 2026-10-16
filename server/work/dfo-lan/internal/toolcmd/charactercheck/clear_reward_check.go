@@ -62,12 +62,18 @@ func clearRewardCheck(ctx context.Context, s *database.TestFixture, reopened *da
 	if _, _, _, e = service.Clear(ctx, foreign, run, 50, now); e == nil {
 		return fmt.Errorf("clear reward crossed owner")
 	}
-	beforeRaw, e := s.CharacterState(ctx, role.ID)
+	storedState, e := s.CharacterState(ctx, role.ID)
 	if e != nil {
 		return e
 	}
-	var beforeState character.State
-	if e = json.Unmarshal(beforeRaw, &beforeState); e != nil {
+	var before character.State
+	if e = json.Unmarshal(storedState, &before); e != nil {
+		return e
+	}
+	// Quest top-up may have advanced this fixture further than level 3;
+	// clear must add the captured 163+24 exactly once to its current ledger.
+	expectedGrowth, e := character.AddGrowthExperience(c, rules, before.Level, before.Experience, 163+24)
+	if e != nil {
 		return e
 	}
 	type result struct {
@@ -103,7 +109,7 @@ func clearRewardCheck(ctx context.Context, s *database.TestFixture, reopened *da
 		if e = json.Unmarshal(res.r.State, &state); e != nil {
 			return e
 		}
-		if state.Experience != beforeState.Experience+uint64(res.c.Base)+uint64(res.c.Score)+uint64(res.c.MonsterExperience) {
+		if state.Experience != expectedGrowth.Experience || state.Level != expectedGrowth.Level {
 			return fmt.Errorf("duplicate clear experience: %d", state.Experience)
 		}
 	}
@@ -122,7 +128,7 @@ func clearRewardCheck(ctx context.Context, s *database.TestFixture, reopened *da
 	if e = json.Unmarshal(saved.State, &state); e != nil {
 		return e
 	}
-	if state.Experience != beforeState.Experience+uint64(163+24) {
+	if state.Experience != expectedGrowth.Experience || state.Level != expectedGrowth.Level {
 		return fmt.Errorf("clear persistence mismatch")
 	}
 	var recordState struct {

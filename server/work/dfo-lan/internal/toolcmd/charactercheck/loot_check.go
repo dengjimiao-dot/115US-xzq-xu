@@ -127,7 +127,7 @@ func lootCheck(ctx context.Context, s *database.TestFixture, reopened *database.
 			if e = json.Unmarshal(res.role.State, &state); e != nil {
 				return e
 			}
-			if state.Experience != beforeState.Experience || state.Level != beforeState.Level {
+			if state.Experience != beforeState.Experience || state.Level != beforeState.Level || state.SkillPoints != beforeState.SkillPoints {
 				return fmt.Errorf("inventory overwrote experience")
 			}
 		}

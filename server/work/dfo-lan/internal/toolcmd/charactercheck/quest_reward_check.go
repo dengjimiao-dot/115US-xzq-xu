@@ -174,7 +174,7 @@ func questRewardCheck(ctx context.Context, s *database.TestFixture, reopened *da
 	if e = json.Unmarshal(rows[0].State, &state); e != nil {
 		return e
 	}
-	if state.Experience != expectedState.Experience || state.Level != expectedState.Level {
+	if state.Experience != expectedState.Experience || state.Level != expectedState.Level || state.SkillPoints != expectedState.SkillPoints {
 		return fmt.Errorf("quest reward reopen failed")
 	}
 	active, e := service.Active(ctx, role)

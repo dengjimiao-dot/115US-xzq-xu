@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"dfolan/internal/catalog"
+	"dfolan/internal/database"
 	"dfolan/internal/game/protocol"
 	"dfolan/internal/inventory"
 	"dfolan/internal/workflow"
@@ -86,7 +88,23 @@ func (w *worldSession) useStackable(p []byte, event func(map[string]any)) ([]out
 			w.ispins.potionUsed++
 		}
 	}
-	saved, receipt, _, e := (&workflow.ItemService{Store: w.store, Items: w.items}).ConsumeChecked(ctx, w.role, r, check, committed)
+	service := &workflow.ItemService{Store: w.store, Items: w.items}
+	var saved database.Character
+	var receipt inventory.ConsumeReceipt
+	var applied bool
+	if r.Template == catalog.NativeCharacterSlotTicket {
+		if w.characters == nil {
+			return nil, fmt.Errorf("character rules unavailable")
+		}
+		saved, receipt, applied, e = service.ConsumeCharacterSlotTicket(ctx, w.role, r, w.characters.Rules.MaxCharacters)
+	} else {
+		saved, receipt, applied, e = service.ConsumeCheckedWithRole(ctx, w.role, r, func(current database.Character, request protocol.UseStackableRequest) error {
+			if check != nil {
+				return check()
+			}
+			return nil
+		}, committed)
+	}
 	if e != nil {
 		return nil, e
 	}
@@ -145,6 +163,21 @@ func (w *worldSession) useStackable(p []byte, event func(map[string]any)) ([]out
 	plan := []outboundPacket{
 		{"item_use_ack", 1, 44, ack},
 		{"item_use_inventory_updated", 0, 14, update},
+	}
+	if receipt.CharacterCapacity != 0 {
+		body, err := protocol.CharacterCapacityUpdated(receipt.CharacterCapacity)
+		if err != nil {
+			return nil, err
+		}
+		plan = append(plan, outboundPacket{"character_capacity_updated", 0, 66, body})
+		event(map[string]any{"kind": "character_slot_expanded", "character_id": w.role.ID, "account_id": w.role.AccountID, "capacity": receipt.CharacterCapacity, "applied": applied})
+	}
+	if mask, skinTicket := inventory.SkinSlotMaskForTicket(r.Template, w.items.Catalog); skinTicket && b.ExpandEquipFlags&mask != 0 {
+		refresh, err := w.unlockRefresh(saved)
+		if err != nil {
+			return nil, err
+		}
+		plan = append(plan, refresh...)
 	}
 	return plan, nil
 }

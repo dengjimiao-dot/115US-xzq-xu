@@ -6,8 +6,10 @@ import (
 	"dfolan/internal/dungeon"
 	"dfolan/internal/game/protocol"
 	"dfolan/internal/legion"
+	"dfolan/internal/quest"
 	"dfolan/internal/workflow"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -578,11 +580,12 @@ func (client *gameConnection) dispatchDungeon(requestData *clientRequest) dispat
 				return dispatchHandled
 			}
 			if requestData.frame.ID == 43 {
-				if request, decodeErr := protocol.DecodePickup(requestData.plaintext); decodeErr == nil {
-					body, encodeErr := protocol.PickupRefused(request.Object)
+				if _, decodeErr := protocol.DecodePickup(requestData.plaintext); decodeErr == nil {
+					body, encodeErr := client.worldState.pickupRefusal(requestData.plaintext)
 					if encodeErr != nil || client.output.send(1, 43, body) != nil {
 						return dispatchClose
 					}
+					client.recordPickupState("pickup_refused_ack_written", requestData.plaintext, body)
 				}
 				return dispatchHandled
 			}
@@ -619,6 +622,9 @@ func (client *gameConnection) dispatchDungeon(requestData *clientRequest) dispat
 			client.event(map[string]any{"kind": p.Name, "id": p.ID, "character_id": client.selectedCharacterID, "plain_hex": hex.EncodeToString(p.Payload)})
 		}); e != nil {
 			return dispatchClose
+		}
+		if requestData.frame.ID == 37 {
+			client.worldState.commitRobotRoom()
 		}
 		if requestData.frame.ID == 39 && client.worldState.completionErr != nil {
 			client.event(map[string]any{"kind": "dungeon_completion_error", "map": client.worldState.activeDungeon.Room.Map, "error": client.worldState.completionErr.Error()})
@@ -691,6 +697,7 @@ func (client *gameConnection) dispatchDungeon(requestData *clientRequest) dispat
 		for _, p := range plan {
 			if p.Name == "solo_party_initialized" {
 				client.worldState.soloPartyReady = true
+				client.worldState.rememberOrdinarySoloParty(p.Payload)
 			}
 			if p.Name == "card_scroll_ack" {
 				client.worldState.cardScrolled = true
@@ -901,7 +908,7 @@ func (client *gameConnection) dispatchWorldAndQuests(requestData *clientRequest)
 				return dispatchHandled
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			count, e := (&workflow.QuestService{Store: client.gameStore, Quest: client.questService}).ClearActQuests(ctx, client.worldState.role)
+			result, e := (&workflow.QuestService{Store: client.gameStore, Quest: client.questService}).SkipMainlineNow(ctx, client.worldState.role, "client", "CMD1422 mainline skip", 0)
 			cancel()
 			if e != nil {
 				client.event(map[string]any{"kind": "act_quest_clear_refused", "id": requestData.frame.ID, "reason": e.Error()})
@@ -910,7 +917,17 @@ func (client *gameConnection) dispatchWorldAndQuests(requestData *clientRequest)
 			if e = client.output.send(1, 1422, protocol.ClearQuestTicketAccepted()); e != nil {
 				return dispatchClose
 			}
-			client.event(map[string]any{"kind": "act_quests_cleared", "character_id": client.worldState.role.ID, "count": count})
+			refreshCtx, refreshCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			plan, e := client.worldState.instantQuestPlan(refreshCtx, result)
+			refreshCancel()
+			if e != nil {
+				client.event(map[string]any{"kind": "instant_quest_refresh_error", "reason": e.Error()})
+				return dispatchClose
+			}
+			if client.sendPlan(plan, client.logWorldAction) != nil {
+				return dispatchClose
+			}
+			client.event(map[string]any{"kind": "instant_quests_cleared", "character_id": result.Role.ID, "count": len(result.Settled), "key_items": result.KeyItems, "stopped": result.Stopped, "blocked": result.Blocked})
 		} else {
 			// The native CMD1422 success branch immediately requests CMD2278.
 			// Its sender writes no body; publish the quest snapshots here.
@@ -1033,7 +1050,11 @@ func (client *gameConnection) dispatchWorldAndQuests(requestData *clientRequest)
 		}
 		cancel()
 		if e != nil {
-			client.event(map[string]any{"kind": "quest_rejected", "quest": qid, "error": e.Error()})
+			if requestData.frame.ID == 31 && errors.Is(e, quest.ErrAlreadyCompleted) {
+				client.event(map[string]any{"kind": "quest_accept_already_completed", "quest": qid, "operation": requestData.frame.ID})
+			} else {
+				client.event(map[string]any{"kind": "quest_rejected", "quest": qid, "operation": requestData.frame.ID, "error": e.Error()})
+			}
 			return dispatchHandled
 		}
 		if e = client.output.send(1, requestData.frame.ID, response); e != nil {
