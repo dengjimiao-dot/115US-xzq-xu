@@ -356,7 +356,11 @@ func (w *worldSession) openLotteryItem(ctx context.Context, store lotteryItemSto
 				}
 				bag.Special[1] = append(bag.Special[1], item)
 				resultRow = inventory.EquipmentRow(item)
-				specialRefresh, err = inventory.EquipmentPayload(1, bag.Special[1], false)
+				// [FIX-20261014 寄存行剔除] 这是一记"全量装扮栏更新"，同样要剔除
+				// 衣柜寄存行——否则抽奖开出一件时装就会把寄存的件一起推回背包。
+				// 剔除集从**变更前**的存档取（抽奖新件刚追加进去，不该参与判定）。
+				specialRefresh, err = inventory.EquipmentPayload(1,
+					avatarBarRowsWithoutCloset(bag.Special[1], avatarClosetHiddenBarSlots(current.State)), false)
 				if err != nil {
 					return nil, nil, err
 				}

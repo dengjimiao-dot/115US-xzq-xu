@@ -277,7 +277,8 @@ func shopPilotSpaces(p *cashshop.Pilot, receipt database.CashReceipt, balance ui
 		if err != nil {
 			return nil, err
 		}
-		body, err := inventory.SpecialEquipmentRestorePayload(receipt.CharacterState, 1)
+		// [FIX-20261014 寄存行剔除] 扩容/购买后重推装扮栏必须剔除衣柜寄存行。
+		body, err := avatarBarRestorePayload(receipt.CharacterState)
 		if err != nil {
 			return nil, err
 		}
@@ -342,7 +343,12 @@ func shopPilotSpaces(p *cashshop.Pilot, receipt database.CashReceipt, balance ui
 		if err != nil {
 			return nil, err
 		}
-		body, err := protocol.AvatarClosetInfo(protocol.AvatarClosetSlots(b.ClosetExpansion))
+		// 选中套号照原样带回（买扩容不该改变玩家当前选中的套装）。
+		closetSelected, _, _ := readAvatarClosetSelected(receipt.CharacterState)
+		if closetSelected >= protocol.AvatarClosetSlots(b.ClosetExpansion) {
+			closetSelected = 0
+		}
+		body, err := protocol.AvatarClosetInfo(protocol.AvatarClosetSlots(b.ClosetExpansion), closetSelected)
 		if err != nil {
 			return nil, err
 		}
@@ -373,7 +379,8 @@ func shopPilotSpaces(p *cashshop.Pilot, receipt database.CashReceipt, balance ui
 		update = outboundPacket{"cera_purchase_inventory", 0, 14, items}
 
 		if avatarTouched && len(b.Special[1]) > 0 {
-			payload, err := inventory.EquipmentPayload(1, b.Special[1], false)
+			// [FIX-20261014 寄存行剔除] 同上：整栏更新不得把寄存行推回背包。
+			payload, err := avatarBarUpdatePayload(receipt.CharacterState)
 			if err != nil {
 				return nil, err
 			}

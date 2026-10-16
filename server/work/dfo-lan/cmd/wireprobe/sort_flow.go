@@ -68,7 +68,14 @@ func (s *sortSession) handle(service *workflow.WearService, w *worldSession, p, 
 			plan = append(plan, outboundPacket{"item_sort_inventory_restored", 0, 13, body})
 		}
 	} else if r.List == 1 {
-		if body, e := inventory.SpecialEquipmentRestorePayload(saved.State, 1); e == nil && len(body) > 0 {
+		// [FIX-20261014 寄存行剔除] 客户端侧的装扮栏**不含**寄存在衣柜里的行：
+		// 登录 noti1077 mode 1 已经把那一行从栏槽搬进柜槽（客户端搬运、栏槽腾空），
+		// 服务端 Special[1] 却仍带着它。原样重推 Special[1] 会把这批件重新塞回
+		// 背包——业主 2026-10-14 报"点整理之后会显示在包里"，并连带把客户端的
+		// 衣柜链接/实例记账搅乱（"时装栏不显示穿在身上的时装"）。
+		// 用 avatarBarRestorePayload 下发剔除后的行集：头部形状与
+		// SpecialEquipmentRestorePayload 逐字节一致，空账本时行为不变。
+		if body, e := avatarBarRestorePayload(saved.State); e == nil && len(body) > 0 {
 			plan = append(plan, outboundPacket{"avatar_inventory_restored", 0, 13, body})
 		}
 	} else if r.List == 7 {
