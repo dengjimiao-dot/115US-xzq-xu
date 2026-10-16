@@ -1,0 +1,7 @@
+/dist/
+/.build/
+/backups/
+/last-install.json*
+/payload/SoundPacks/sounds_npc.npk
+/payload/SoundPacks/sounds_ui.npk
+/payload/SoundPacks/.jp-voice-assemble-*
